@@ -1,0 +1,22 @@
+.title{
+    text-align: center;
+}
+
+.login-box{
+    /* text-align: center; */
+    float: center;
+    width:50%; 
+    margin: auto;
+    border: 1px solid black;
+
+}
+.login-text{
+    font-family: 'Ubuntu', sans-serif;
+    font-size: 20px;
+}
+input{
+    width: 100%;
+}
+button{
+    margin : 10px, 10px;
+}
