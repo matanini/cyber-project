@@ -3,6 +3,8 @@ import hmac
 import hashlib
 import os
 from secret import SECRET
+from database_handler import get_users,exec_select_query,exec_insert_query
+
 
 app = Flask(__name__)
 
@@ -26,23 +28,13 @@ def intended_change_password():
 def check_login():
     username = request.form['username']
     password = request.form['password']
-    
-    # Generate a random salt
-    
-    
+        
     # Hash the password using HMAC
     hashed_password = hmac.new(SECRET, password.encode('utf-8'), hashlib.sha256).hexdigest()
     
-    # Connect to the database
-    conn = sqlite3.connect(DBFILE)
-    cursor = conn.cursor()
+    q="SELECT * FROM `users` WHERE user_name=? AND user_password=?"
     
-    # Check if the username and hashed password match
-    cursor.execute("SELECT * FROM `users` WHERE user_name=? AND user_password=?", (username, hashed_password))
-    result = cursor.fetchone()
-    
-    # Close the connection
-    conn.close()
+    result= exec_select_query(q,username, hashed_password)
     
     # If the result is not None, then the login was successful
     if result:
@@ -62,42 +54,15 @@ def register():
 
     # Hash the password using HMAC
     hashed_password = hmac.new(SECRET, password.encode('utf-8'), hashlib.sha256).hexdigest()
-    
-    # Connect to the database
-    conn = sqlite3.connect(DBFILE)
-    cursor = conn.cursor()
-    
-    # Insert the new user into the database
-    cursor.execute("INSERT INTO `users` (user_name, user_password, user_email) VALUES (?, ?, ?)", (username, hashed_password, email))
-    conn.commit()
-    
-    # Close the connection
-    conn.close()
-    
+    q="INSERT INTO `users` (user_name, user_password, user_email) VALUES (?, ?, ?)"
+    exec_insert_query(q,username, hashed_password, email)
+   
     return index()
-
-
-import sqlite3
- 
-
-HOST_NAME = "localhost"
-HOST_PORT = 80
-DBFILE = "users.db"
-
-
-# (B) HELPER - GET ALL USERS FROM DATABASE
-def getusers():
-  conn = sqlite3.connect(DBFILE)
-  cursor = conn.cursor()
-  cursor.execute("SELECT * FROM `users`")
-  results = cursor.fetchall()
-  conn.close()
-  return results
 
 
 @app.route("/system")
 def get_system_page():
   # (C1) GET ALL USERS
-  users = getusers()
+  users = get_users()
   # print(users)
   return render_template("system.html", usr=users)
