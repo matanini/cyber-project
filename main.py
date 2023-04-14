@@ -92,3 +92,7 @@ def get_system_page(request: Request = None):
     clients = services.get_all_clients()
     return templates.TemplateResponse("system.html", {"request": request, "clients": clients}) 
 
+@app.get("/test", response_class=HTMLResponse)
+def test(request: Request = None):
+    goni=services.previous_password_validation(user_id=1,new_pass="123")
+    pass

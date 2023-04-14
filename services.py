@@ -59,10 +59,13 @@ def get_user_by_email(email):
     q="SELECT * FROM `users` WHERE user_email=?"
     return exec_select_query(q, email)
 
+def get_user_by_user_id(user_id:int):
+    q="SELECT * FROM `users` WHERE user_id=?"
+    return exec_select_query(q, user_id)
+
 def get_user_by_username(username):
     q="SELECT * FROM `users` WHERE user_name=?"
     return exec_select_query(q, username)
-
 
 def password_check(password):
      
@@ -111,3 +114,11 @@ def password_check(password):
         val = False
 
     return val
+
+
+
+def previous_password_validation(user_id:int,new_pass:str):
+    user=get_user_by_user_id(user_id=user_id)
+    print(user)
+    # for pass in user[]
+

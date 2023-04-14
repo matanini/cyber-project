@@ -4,6 +4,7 @@ CREATE TABLE `users` (
   `user_name` INTEGER NOT NULL,
   `user_password` TEXT NOT NULL,
   `user_email` TEXT NOT NULL,
+  `old_passwords` TEXT NOT NULL,
   
   PRIMARY KEY("user_id" AUTOINCREMENT)
 );
