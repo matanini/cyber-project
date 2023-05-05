@@ -56,6 +56,7 @@ async def check_login( request: Request, username: str = Form(...), password: st
     result = services.db_check_login(username, hashed_password)
     # If the result is not None, then the login was successful
     if result:
+        app.user = services.get_user_by_username(username)
         return get_system_page(request)
     else:
         return templates.TemplateResponse("failure.html", {"request": request})
@@ -106,15 +107,28 @@ def test(request: Request = None):
     pass
 
 @app.post("/send_reset_email", response_class=HTMLResponse)
-def send_reset_email(request: Request, email: str = Form(...)):
-    if not services.get_user_by_email(email):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email do not exist")
-    services.send_reset_email(email)
+async def send_reset_email(request: Request, email: str = Form(...)):
+    if services.get_user_by_email(email):
+        app.reset_password_data = {'email': email, 'token':services.create_token()}
+        await services.send_reset_email(app.reset_password_data)
+    else:
+        print(1111111)
+        app.reset_password_data = False
+        print(app.reset_password_data)
+    return templates.TemplateResponse("forgot_password_token.html", {"request": request})
+
+@app.post("/validate_token", response_class=HTMLResponse)
+def validate_token(request: Request, user_token: str = Form(...)):
+    if not app.reset_password_data :
+        print({"message": "Something went wrong"})
+        return templates.TemplateResponse("failure.html", {"request": request})
+    if services.validate_token(app.reset_password_data['token'],user_token):
+        return templates.TemplateResponse("change_password.html", {"request": request})
+    print({"message": "Something went wrong"})
+    return templates.TemplateResponse("failure.html", {"request": request}) 
     
-    return templates.TemplateResponse("success.html", {"request": request})
 
-
-
+        
 
 if __name__ == "__main__":
     import uvicorn

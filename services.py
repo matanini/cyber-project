@@ -5,6 +5,9 @@
 import re
 import sqlite3
 from config import DBFILE, PASSWORD_POLICY
+import hashlib
+import random
+from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 
 def create_database():
     conn = sqlite3.connect(DBFILE)
@@ -123,11 +126,45 @@ def password_check(password):
 
     return val
 
-def send_reset_email(email):
-    # create unique token sha1
+def create_token():
+    r = str(random.randint(0,1_000_000_000)).encode()
+    # return a sha1 generated token
+    return hashlib.sha1(r).hexdigest()
 
+async def send_reset_email(reset_password_data):
+    token = reset_password_data['token']
+    email = reset_password_data['email']
+
+    body = f"""
+    <html>
+        <body>
+            <p>Here is your password reset token: {token}</p>
+        </body>
+    </html>
+    """
     # send mail with the token to the user
-    pass
+    message = MessageSchema(
+        subject="Password reset token",
+        recipients=[email],  # List of recipients, as many as you can pass
+        body=body,
+        subtype="html"
+    )
+    conf = ConnectionConfig(
+        MAIL_USERNAME='communication.ltd.2023',
+        MAIL_PASSWORD="qlqgjhdtxkqwwudi",
+        MAIL_FROM='communication.ltd.2023@gmail.com',
+        MAIL_PORT=587,
+        MAIL_SERVER='smtp.gmail.com',
+        MAIL_FROM_NAME="Communication_LTD",
+        MAIL_STARTTLS=True,
+        MAIL_SSL_TLS=False,
+        USE_CREDENTIALS=True,
+        VALIDATE_CERTS=True)
+    
+    fm = FastMail(conf)
+    await fm.send_message(message)
+
+    return {"message": "Password reset token sent to your email"}
 
 
 def update_password(user_id:int,new_pass:str):
@@ -138,3 +175,6 @@ def previous_password_validation(user_id:int,new_pass:str):
     print(user)
     # for pass in user[]
 
+def validate_token(real_token, user_token):
+    
+    return real_token == user_token
