@@ -6,6 +6,14 @@ import re
 import sqlite3
 from config import DBFILE, PASSWORD_POLICY
 
+def create_database():
+    conn = sqlite3.connect(DBFILE)
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS `users` (user_id INTEGER PRIMARY KEY AUTOINCREMENT, user_name TEXT NOT NULL, user_password TEXT NOT NULL, user_email TEXT NOT NULL, password_history TEXT)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS `clients` (client_id INTEGER PRIMARY KEY AUTOINCREMENT, client_name TEXT, client_email TEXT, client_phone TEXT, client_city TEXT)")
+    conn.commit()
+    conn.close()
+
 def exec_select_query(q,*params):
 
     # Connect to the database
@@ -115,7 +123,15 @@ def password_check(password):
 
     return val
 
+def send_reset_email(email):
+    # create unique token sha1
 
+    # send mail with the token to the user
+
+    
+
+def update_password(user_id:int,new_pass:str):
+    pass
 
 def previous_password_validation(user_id:int,new_pass:str):
     user=get_user_by_user_id(user_id=user_id)

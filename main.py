@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Request, HTTPException, Form, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import hmac
@@ -13,6 +13,11 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
+
+
+@app.on_event("startup")
+async def startup_event():
+    services.create_database()
 
 @app.get("/", response_class=HTMLResponse)
 def homepage(request: Request):
@@ -48,7 +53,7 @@ async def check_login( request: Request, username: str = Form(...), password: st
     result = services.db_check_login(username, hashed_password)
     # If the result is not None, then the login was successful
     if result:
-        return RedirectResponse(url="/system", status_code=status.HTTP_200_OK)
+        return get_system_page(request)
     else:
         return templates.TemplateResponse("failure.html", {"request": request})
 
@@ -84,7 +89,7 @@ def register(
     services.db_add_new_user(username, hashed_password, email)
 
     # Redirect to the homepage
-    return RedirectResponse(url="/", status_code=status.HTTP_201_CREATED)
+    return homepage(request=request)
 
 
 @app.get("/system", response_class=HTMLResponse)
@@ -96,3 +101,11 @@ def get_system_page(request: Request = None):
 def test(request: Request = None):
     goni=services.previous_password_validation(user_id=1,new_pass="123")
     pass
+
+@app.post("/send_reset_email", response_class=HTMLResponse)
+def send_reset_email(request: Request, email: str = Form(...)):
+    if not services.get_user_by_email(email):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email do not exist")
+    services.send_reset_email(email)
+    
+    return templates.TemplateResponse("success.html", {"request": request})
