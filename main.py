@@ -112,6 +112,10 @@ def send_reset_email(request: Request, email: str = Form(...)):
     services.send_reset_email(email)
     
     return templates.TemplateResponse("success.html", {"request": request})
+
+
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

@@ -127,8 +127,8 @@ def send_reset_email(email):
     # create unique token sha1
 
     # send mail with the token to the user
+    pass
 
-    
 
 def update_password(user_id:int,new_pass:str):
     pass

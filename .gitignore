@@ -1,0 +1,5 @@
+# XML FILES
+*.xml 
+
+# CACHE
+*.pyc
