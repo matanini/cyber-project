@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import hmac
 import hashlib
+import ssl
 
 from secret import SECRET
 import services 
@@ -11,6 +12,8 @@ import services
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+context.load_cert_chain('./static/cert.pem', './static/key.pem')
 
 templates = Jinja2Templates(directory="templates")
 
@@ -109,3 +112,13 @@ def send_reset_email(request: Request, email: str = Form(...)):
     services.send_reset_email(email)
     
     return templates.TemplateResponse("success.html", {"request": request})
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        app,
+        host='localhost',
+        port=8000,
+        ssl_keyfile='./static/key.pem',
+        ssl_certfile='./static/cert.pem',
+    )
+
