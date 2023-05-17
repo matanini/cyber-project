@@ -4,16 +4,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import hmac
 import hashlib
-import ssl
+# import ssl
 
 from secret import SECRET
 import services 
 
-
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-context.load_cert_chain('./static/cert.pem', './static/key.pem')
+
 
 templates = Jinja2Templates(directory="templates")
 
@@ -30,19 +28,17 @@ def homepage(request: Request):
 @app.get("/forgot-password", response_class=HTMLResponse)
 def forgot_password(request: Request):
     return templates.TemplateResponse("forgot_password.html", {"request": request})
-# render_template("forgot_password.html")
+
 
 
 @app.get("/change-password", response_class=HTMLResponse)
 def change_password(request: Request):
     return templates.TemplateResponse("change_password.html", {"request": request}) 
-# render_template("change_password.html")
 
 
 @app.get("/intended-change-password", response_class=HTMLResponse)
 def intended_change_password(request: Request):
     return templates.TemplateResponse("intended_change_password.html", {"request": request})
-    # render_template("intended_change_password.html")
 
 
 @app.post("/check-login", response_class=HTMLResponse)
@@ -128,14 +124,15 @@ def validate_token(request: Request, user_token: str = Form(...)):
     return templates.TemplateResponse("failure.html", {"request": request}) 
     
 
-        
+
+
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         app,
         host='localhost',
-        port=8000,
+        port=80,
         ssl_keyfile='./static/key.pem',
         ssl_certfile='./static/cert.pem',
     )

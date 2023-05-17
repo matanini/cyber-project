@@ -176,5 +176,4 @@ def previous_password_validation(user_id:int,new_pass:str):
     # for pass in user[]
 
 def validate_token(real_token, user_token):
-    
     return real_token == user_token
