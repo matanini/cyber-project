@@ -1,0 +1,6 @@
+fastapi
+fastapi-mail
+uvicorn[standard]
+httpx
+pydantic
+python-multipart
