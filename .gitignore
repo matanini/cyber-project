@@ -1,1 +1,5 @@
 *.ipynb
+
+*.pyc
+.pytest_cache
+__pycache__
