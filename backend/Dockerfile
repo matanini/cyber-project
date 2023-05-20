@@ -8,4 +8,4 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "app.main:app","--reload", "--host", "0.0.0.0", "--port", "8001", "--ssl-keyfile","./ssl/key.pem", "--ssl-certfile","./ssl/cert.pem"]
+CMD ["uvicorn", "app.main:app","--reload", "--host", "0.0.0.0", "--port", "8001"]

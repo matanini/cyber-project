@@ -70,7 +70,7 @@ def login(container):
     if container.button("Login"):
         data = {"username": username, "password": password}
         url = f"{BACKEND_URL}/login"
-        res = httpx.post(url, json=data, timeout=None, verify=False)
+        res = httpx.post(url, json=data, timeout=None)
         st.write(res.text)
         if res.status_code == 200:
             st.session_state['is_connected'] = True 

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, Form, status
 import app.services as services
 from pydantic import BaseModel
 
+
 class User(BaseModel):
     username: str
     email: str
@@ -160,3 +161,10 @@ async def verify_token(request: Request):
     else:
         print(token_data)
 
+@app.post("/increment_login_attempts/")
+async def increment_login_attempts(request: Request):
+    data = await request.json()
+    username = data['username']
+    user_login_attempts = await services.increment_login_attempts(username)[0]
+    login_attempts = {'username' : username, 'no_of_attempts' : user_login_attempts[2], 'last_attempt': user_login_attempts[3]}
+    return {"status": "success", 'login_attempts':login_attempts}

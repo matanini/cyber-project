@@ -1,4 +1,4 @@
-from app.config.config import DBFILE, PASSWORD_HISTORY_LENGTH
+from app.config.config import DBFILE, PASSWORD_HISTORY_LENGTH, DATE_TIME_FORMAT
 
 from datetime import datetime, timedelta
 import sqlite3
@@ -36,6 +36,13 @@ def create_database():
         key TEXT NOT NULL UNIQUE, 
         value TEXT NOT NULL
         )""")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS `login_attempts` (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            username TEXT NOT NULL UNIQUE, 
+            attempts_number INTEGER NOT NULL,
+            last_time_changed TEXT
+            )""")
     conn.commit()
     conn.close()
 
@@ -158,3 +165,22 @@ async def get_token_by_token(token):
 async def remove_token(token):
     q="DELETE FROM `tokens` WHERE token=?"
     exec_insert_query(q, token)
+
+async def get_login_attempts(username):
+    q = "SELECT * FROM `login_attempts` WHERE username=?"
+    data = exec_select_query(q, username)
+    data[0][3] = datetime.strptime(data[0][3], DATE_TIME_FORMAT)
+    return data
+
+async def increment_login_attempts(username):
+    res_login_attempts = await get_login_attempts(username)
+    if len(res_login_attempts) == 0:
+        q = "INSERT INTO `login_attempts` (username, attempts_number, last_time_changed) VALUES (?, ? ,?)"
+        exec_insert_query(q, username, 0, None)
+        res_login_attempts = await get_login_attempts(username)
+
+    q="UPDATE `login_attempts` SET attempts_number=?, last_time_changed=? WHERE username=?"
+    exec_insert_query(q, res_login_attempts[0][2] + 1, datetime.now().strftime(DATE_TIME_FORMAT), username)
+
+    return get_login_attempts(username)
+

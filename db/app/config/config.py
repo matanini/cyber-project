@@ -1,2 +1,3 @@
 DBFILE = "users.db"
 PASSWORD_HISTORY_LENGTH = 3
+DATE_TIME_FORMAT = '%d-%m-%YT%H:%M:%S'

@@ -28,7 +28,7 @@ services:
     depends_on:
       - backend
     environment:
-      - BACKEND_URL=https://backend:8001
+      - BACKEND_URL=http://backend:8001
     
     
 

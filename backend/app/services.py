@@ -152,3 +152,7 @@ async def send_forgot_password(email, token):
     except Exception as e:
         return {"status": "error", "message": str(e)}
     
+async def increment_login_attempts(username):
+    url = f"{DB_URL}/increment_login_attempts"
+    res_increment_login_attempts = httpx.post(url, json={'username': username}, timeout=None)
+    return res_increment_login_attempts.json()['login_attempts']
