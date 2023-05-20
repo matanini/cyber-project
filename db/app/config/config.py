@@ -1,1 +1,2 @@
 DBFILE = "users.db"
+PASSWORD_HISTORY_LENGTH = 3

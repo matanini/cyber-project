@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException, Form, status
 import app.services as services
-
+from config.config import LOGIN_ATTEMPTS
 
 
 app = FastAPI(title="Backend")
@@ -29,15 +29,25 @@ async def login(request: Request):
     data = await request.json()
     username = data['username']
     password = data['password']
-
+    if 'user_login_counter' not in app.session:
+        app.session['user_login_counter'] = 0
+    app.session['user_login_counter'] += 1
+    if app.session['user_login_counter'] > LOGIN_ATTEMPTS:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Too many login attempts")
     res = await services.login(username, password)
     if res['status'] == 'error':
+        if app.session['user_login_counter'] == LOGIN_ATTEMPTS:
+            pass
+            # app.session['login_time'] =
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
     elif res['status'] == 'success':
         app.session["user"] = res['user']
         app.session['is_connected'] = True
+        del app.session['user_login_counter']
         return {"status": "success", 'user': res['user']}
     
+# TODO: DO THIS HERE IN SESSION OR IN DB, SESSION TABLE
+# TODO: {user_id:{"login_time":ewww, "login_counter": 0, "is_connected": False, "user": {"user_id": 1, "username": "admin", "email": ""}}
 
 @app.get("/logout")
 async def logout(request: Request):

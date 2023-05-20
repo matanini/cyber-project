@@ -1,4 +1,4 @@
-from app.config.config import DBFILE
+from app.config.config import DBFILE, PASSWORD_HISTORY_LENGTH
 
 from datetime import datetime, timedelta
 import sqlite3
@@ -128,9 +128,9 @@ def update_user(user_id, username, password, email):
     return get_user_by_user_id(user_id)
 
 async def change_password(user_id, password, old_passwords):
-    # make sure we don't have more than 10 passwords in the history
-    if len(old_passwords)>10:
-        old_passwords = old_passwords[:10]
+    # make sure we don't have more than PASSWORD_HISTORY_LENGTH passwords in the history
+    if len(old_passwords)>PASSWORD_HISTORY_LENGTH:
+        old_passwords = old_passwords[-PASSWORD_HISTORY_LENGTH:]
 
     q="UPDATE `users` SET user_password=?, password_history=? WHERE user_id=?"
     exec_insert_query(q, password, ",".join(old_passwords), user_id)
