@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, HTTPException, Form, status, Depends, Response
 import app.services as services
-from app.config.config import LOGIN_ATTEMPTS
+from app.config.config import MAX_LOGIN_ATTEMPTS
 from app.sessions import cookie, SessionData, backend_memory, verifier
 from uuid import UUID, uuid4
 
@@ -56,9 +56,13 @@ async def login(request: Request):
     data = await request.json()
     username = data['username']
     password = data['password']
-    res = await services.login(username, password)
+    login_attempts_data = await services.increment_login_attempts(username)
+    res = await services.login(username, password, login_attempts_data)
     if res['status'] == 'error':
-        await services.increment_login_attempts(username)
+        if res['message'] == 'Account locked, too many login attempts.':
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account locked, cannot login right now")
+        if res['is_locked']:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials, account locked")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
     elif res['status'] == 'success':
         return {"status": "success", 'user': res['user']}

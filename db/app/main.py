@@ -166,5 +166,5 @@ async def increment_login_attempts(request: Request):
     data = await request.json()
     username = data['username']
     user_login_attempts = await services.increment_login_attempts(username)[0]
-    login_attempts = {'username' : username, 'no_of_attempts' : user_login_attempts[2], 'last_attempt': user_login_attempts[3]}
-    return {"status": "success", 'login_attempts':login_attempts}
+    login_attempts_data = {'username' : username, 'no_of_attempts' : user_login_attempts[2], 'last_attempt': user_login_attempts[3]}
+    return {"status": "success", 'login_attempts_data':login_attempts_data}

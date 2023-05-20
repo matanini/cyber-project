@@ -2,6 +2,7 @@ import httpx
 import os
 import app.security as security
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
+from app.config.config import MAX_LOGIN_ATTEMPTS
 
 
 DB_URL = os.getenv("DB_URL")
@@ -65,7 +66,9 @@ async def create_new_client(name: str, email: str, phone: str, city: str):
         return None
     
 
-async def login(username: str, password: str):
+async def login(username: str, password: str, login_attempts_data: dict):
+    if login_attempts_data['no_of_attempts'] > MAX_LOGIN_ATTEMPTS:
+        return {'status' : 'error', 'message': 'Account locked, too many login attempts.'}
     salt = await get_app_data("salt")
     hashed_password = security.hash_password(salt, password)
     url = f"{DB_URL}/users/login/"
@@ -74,7 +77,7 @@ async def login(username: str, password: str):
         user = res.json()['user']
         return {'status' : "success", "user" :user}
     else:
-        return {"status": "error", "message": "Invalid credentials"}
+        return {"status": "error", "message": "Invalid credentials", 'is_locked': login_attempts_data['no_of_attempts'] == MAX_LOGIN_ATTEMPTS}
     
     
 async def change_password(user_id: str, old_password: str, new_password: str):
@@ -155,4 +158,4 @@ async def send_forgot_password(email, token):
 async def increment_login_attempts(username):
     url = f"{DB_URL}/increment_login_attempts"
     res_increment_login_attempts = httpx.post(url, json={'username': username}, timeout=None)
-    return res_increment_login_attempts.json()['login_attempts']
+    return res_increment_login_attempts.json()['login_attempts_data']

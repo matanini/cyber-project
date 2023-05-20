@@ -1,4 +1,4 @@
-from app.config.config import DBFILE, PASSWORD_HISTORY_LENGTH, DATE_TIME_FORMAT
+from app.config.config import DBFILE, PASSWORD_HISTORY_LENGTH, DATE_TIME_FORMAT, USER_BLOCK_TIME
 
 from datetime import datetime, timedelta
 import sqlite3
@@ -170,6 +170,10 @@ async def get_login_attempts(username):
     q = "SELECT * FROM `login_attempts` WHERE username=?"
     data = exec_select_query(q, username)
     data[0][3] = datetime.strptime(data[0][3], DATE_TIME_FORMAT)
+    if data[0][3] + timedelta(days=USER_BLOCK_TIME['day'], hours=USER_BLOCK_TIME['hour'], minutes=USER_BLOCK_TIME['minute']) < datetime.now():
+        q = "DELETE FROM `login_attempts` WHERE username=?"
+        exec_insert_query(q, username)
+        data = []
     return data
 
 async def increment_login_attempts(username):
@@ -182,5 +186,5 @@ async def increment_login_attempts(username):
     q="UPDATE `login_attempts` SET attempts_number=?, last_time_changed=? WHERE username=?"
     exec_insert_query(q, res_login_attempts[0][2] + 1, datetime.now().strftime(DATE_TIME_FORMAT), username)
 
-    return get_login_attempts(username)
+    return await get_login_attempts(username)
 
