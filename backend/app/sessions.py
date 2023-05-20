@@ -8,8 +8,8 @@ from fastapi_sessions.frontends.implementations import SessionCookie, CookiePara
 
 
 class SessionData(BaseModel):
-    username: str = None
-    is_connected: bool = False
+    username: str | None = None
+    # is_connected: bool = False
 
 
 cookie_params = CookieParameters()

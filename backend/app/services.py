@@ -80,12 +80,12 @@ async def login(username: str, password: str, login_attempts_data: dict):
         return {"status": "error", "message": "Invalid credentials", 'is_locked': login_attempts_data['no_of_attempts'] == MAX_LOGIN_ATTEMPTS}
     
     
-async def change_password(user_id: str, old_password: str, new_password: str):
+async def change_password(username: str, old_password: str, new_password: str):
     salt = await get_app_data("salt")
     hashed_old_password = security.hash_password(salt, old_password)
     hashed_new_password = security.hash_password(salt, new_password)
     url = f"{DB_URL}/users/change_password/"
-    res = httpx.post(url, json={'user_id': user_id, 'hashed_old_password': hashed_old_password, 'hashed_new_password': hashed_new_password}, timeout=None)
+    res = httpx.post(url, json={'username': username, 'hashed_old_password': hashed_old_password, 'hashed_new_password': hashed_new_password}, timeout=None)
     print(res.text)
     if res.status_code == 200:
         return {'status' : "success"}
@@ -98,9 +98,22 @@ async def change_password(user_id: str, old_password: str, new_password: str):
     else:
         return {"status": "error", "message": "Unknown error"}
 
+async def reset_password(email:str, password: str):
+    user = await get_user_by_email(email)
+    if user is None:
+        return {"status": "error", "message": "User not found"}
+    salt = await get_app_data("salt")
+    hashed_password = security.hash_password(salt, password)
+    url = f"{DB_URL}/users/reset_password/"
+    res = httpx.post(url, json={'email': email, 'password': hashed_password}, timeout=None)
+    if res.status_code == 200:
+        return {"status": "success", "message": "Password reset successfully"}
+    else:
+        return {"status": "error", "message": "User not found"}
+
+
 async def forgot_password(email: str):
     user = await get_user_by_email(email)
-    print(user)
     if user is None:
         return {"status": "error", "message": "User not found"}
     
@@ -115,12 +128,13 @@ async def forgot_password(email: str):
         if res.status_code == 200:
             return {"status": "success", "message": "Password reset token sent to your email"}
         else:
-            return {"status": "error", "message": "Unknown error"}
-    else:
-        return {"status": "error", "message": "Unknown error"}
+            return {"status": "error", "message": res.json()['detail'],'res_code': res.status_code}
+    elif res['status'] == "error":
+        return {"status": "error", "message": res['message'] ,'res_code': res.status_code}
     
 
 async def send_forgot_password(email, token):
+    # TODO: make the email better
     body = f"""
     <html>
         <body>
@@ -159,5 +173,16 @@ async def increment_login_attempts(username):
     url = f"{DB_URL}/increment_login_attempts"
     res_increment_login_attempts = httpx.post(url, json={'username': username}, timeout=None)
     res_increment_login_attempts = res_increment_login_attempts.json()
-    print(res_increment_login_attempts)
     return res_increment_login_attempts['login_attempts_data']
+
+async def validate_token(token):
+    url = f"{DB_URL}/users/validate_token/"
+    res = httpx.post(url, json={'token': token}, timeout=None)
+    if res.status_code == 200:
+        return {"status": "success", "message": "Token is valid"}
+    elif res.status_code == 404:
+        return {"status": "error", "message": "Token not found", 'res_code': 404}
+    elif res.status_code == 401:
+        return {"status": "error", "message": "Token is invalid", 'res_code': 401 }
+    else:
+        return {"status": "error", "message": "Unknown error", 'res_code':500}

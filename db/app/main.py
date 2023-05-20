@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request, HTTPException, Form, status
 import app.services as services
 from pydantic import BaseModel
-
+from datetime import datetime, timedelta
+from app.config.config import DATE_TIME_FORMAT
 
 class User(BaseModel):
     username: str
@@ -23,10 +24,11 @@ app = FastAPI(title="DB")
 async def startup_event():
     services.init_app()
 
-# @app.get('/drop_table')
-# async def drop_table():
-#     q = "DROP TABLE `login_attempts`"
-#     services.exec_insert_query(q)
+@app.get('/drop_table')
+async def drop_table():
+    q = "DROP TABLE `login_attempts`"
+    services.exec_insert_query(q)
+    services.create_database()
 
 @app.get("/app/")
 async def get_app_value(request: Request, key: str):
@@ -111,6 +113,7 @@ async def login(request: Request):
     print(user)
     if user:
         if user[0][2] == password:
+            await services.delete_login_attempt(username)
             return {"status": "success", "user" :{"user_id": user[0][0], "username": user[0][1], "email": user[0][3]}}
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
@@ -120,29 +123,36 @@ async def login(request: Request):
 @app.post("/users/change_password/")
 async def change_password(request: Request):
     data = await request.json()
-    user_id = data['user_id']
+    username = data['username']
     hashed_old_password = data['hashed_old_password']
     hashed_new_password = data['hashed_new_password']
-    user = services.get_user_by_user_id(user_id)
+    user = services.get_user_by_username(username)
     if user:
         if user[0][2] == hashed_old_password:
             password_history = user[0][-1].split(",")
             if services.check_old_passwords(hashed_new_password, password_history):
                 password_history.append(hashed_old_password)
-                updated_user = await services.change_password(user_id, hashed_new_password, password_history)
+                updated_user = await services.change_password(username, hashed_new_password, password_history)
                 print(updated_user)
                 return {"status": "success"}
             else:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as the old one")
-
-
-            
-            
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
+@app.post("/users/reset_password/")
+async def reset_password(request: Request):
+    data = await request.json()
+    email = data['email']
+    password = data['password']
+    user = services.get_user_by_email(email)
+    if user:
+        await services.reset_password(email, password)
+        return {"status": "success"}
+    else:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
 @app.post("/users/save_token/")
 async def save_token(request: Request):
@@ -156,15 +166,20 @@ async def save_token(request: Request):
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     
-@app.post("/users/verify_token/")
-async def verify_token(request: Request):
+
+@app.post('/users/validate_token/')
+async def validate_token(request: Request):
     data = await request.json()
     token = data['token']
-    token_data = await services.get_token_by_token(token)
+    token_data = await services.get_token_data_by_token(token)
+    print("token_data", token_data)
     if len(token_data) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not found")
     else:
-        print(token_data)
+        if datetime.strptime(token_data[0][2], DATE_TIME_FORMAT) < datetime.now():
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        else:
+            return {"status": "success"}
 
 @app.post("/increment_login_attempts")
 async def increment_login_attempts(request: Request):

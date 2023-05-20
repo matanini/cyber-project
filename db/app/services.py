@@ -78,7 +78,7 @@ def exec_select_query(q,*params):
     return result
 
 def exec_insert_query(q,*params):
-
+    
     # Connect to the database
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
@@ -101,9 +101,13 @@ def get_all_users():
     return results
 
 
-def get_client_by_id(client_id:int):
-    q="SELECT * FROM `clients` WHERE client_id=?"
-    return exec_select_query(q, client_id)
+def get_client_by_id(client_id:int, secure_mode :bool = True):
+    if not secure_mode:
+        q = f"SELECT * FROM `clients` WHERE client_id={client_id}"
+        return exec_select_query(q)
+    else:
+        q="SELECT * FROM `clients` WHERE client_id=?"
+        return exec_select_query(q, client_id)
 
 def get_client_by_email(email):
     q="SELECT * FROM `clients` WHERE client_email=?"
@@ -134,14 +138,19 @@ def update_user(user_id, username, password, email):
     exec_insert_query(q, username, password, email, user_id)
     return get_user_by_user_id(user_id)
 
-async def change_password(user_id, password, old_passwords):
+async def reset_password(email, password):
+    q="UPDATE `users` SET user_password=? WHERE user_email=?"
+    exec_insert_query(q, password, email)
+    return get_user_by_email(email)
+
+async def change_password(username, password, old_passwords):
     # make sure we don't have more than PASSWORD_HISTORY_LENGTH passwords in the history
     if len(old_passwords)>PASSWORD_HISTORY_LENGTH:
         old_passwords = old_passwords[-PASSWORD_HISTORY_LENGTH:]
 
-    q="UPDATE `users` SET user_password=?, password_history=? WHERE user_id=?"
-    exec_insert_query(q, password, ",".join(old_passwords), user_id)
-    return get_user_by_user_id(user_id)
+    q="UPDATE `users` SET user_password=?, password_history=? WHERE user_name=?"
+    exec_insert_query(q, password, ",".join(old_passwords), username)
+    return get_user_by_username(username)
 
 def check_old_passwords(password, old_passwords):
     if len(old_passwords)==0:
@@ -149,38 +158,50 @@ def check_old_passwords(password, old_passwords):
     return password not in old_passwords
 
 async def save_new_token(email, token):
+    # token = "24267ffbc9865f311a0a33d1c09dc3997e5e590b"
+    db_token = await get_token_data_by_mail(email)
+    if len(db_token)>0:
+        await remove_token_by_mail(email)
     q="INSERT INTO `tokens` (user_email, token, expiry) VALUES (?, ?, ?)"
-    exec_insert_query(q, email, token, datetime.now()+timedelta(minutes=10))
-    # start a background task to remove the token after 10 minutes
-    # asyncio.create_task(remove_token(token))
+    exec_insert_query(q, email, token, (datetime.now()+timedelta(minutes=10)).strftime(DATE_TIME_FORMAT))
 
-async def get_token_by_mail(email):
+async def get_token_data_by_mail(email):
     q="SELECT token FROM `tokens` WHERE user_email=?"
     return exec_select_query(q, email)
 
-async def get_token_by_token(token):    
-    q="SELECT token FROM `tokens` WHERE token=?"
+async def get_token_data_by_token(token):
+    q="SELECT * FROM `tokens` WHERE token=?"
     return exec_select_query(q, token)
+
+async def remove_token_by_mail(email):
+    q="DELETE FROM `tokens` WHERE user_email=?"
+    exec_insert_query(q, email)
 
 async def remove_token(token):
     q="DELETE FROM `tokens` WHERE token=?"
     exec_insert_query(q, token)
 
+async def delete_login_attempt(username):
+    q = "DELETE FROM `login_attempts` WHERE username=?"
+    exec_insert_query(q, username)
+
 async def get_login_attempts(username):
     q = "SELECT * FROM `login_attempts` WHERE username=?"
     data = exec_select_query(q, username)
-    print(data)
+    print("get_login_attempts", data)
     if len(data) > 0:
         data = list(data[0])
         data[3] = datetime.strptime(data[3], DATE_TIME_FORMAT)
+        print(data[3] + timedelta(days=USER_BLOCK_TIME['day'], hours=USER_BLOCK_TIME['hour'], minutes=USER_BLOCK_TIME['minute']))
+
         if data[3] + timedelta(days=USER_BLOCK_TIME['day'], hours=USER_BLOCK_TIME['hour'], minutes=USER_BLOCK_TIME['minute']) < datetime.now():
-            q = "DELETE FROM `login_attempts` WHERE username=?"
-            exec_insert_query(q, username)
+            await delete_login_attempt(username)
             data = []
     return data
 
 async def increment_login_attempts(username):
     res_login_attempts = await get_login_attempts(username)
+    print("increment_login_attempts", res_login_attempts)
     if len(res_login_attempts) == 0:
         q = "INSERT INTO `login_attempts` (username, attempts_number, last_time_changed) VALUES (?, ? ,?)"
         exec_insert_query(q, username, 0, datetime.now().strftime(DATE_TIME_FORMAT))
