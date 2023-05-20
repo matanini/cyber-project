@@ -23,6 +23,11 @@ app = FastAPI(title="DB")
 async def startup_event():
     services.init_app()
 
+# @app.get('/drop_table')
+# async def drop_table():
+#     q = "DROP TABLE `login_attempts`"
+#     services.exec_insert_query(q)
+
 @app.get("/app/")
 async def get_app_value(request: Request, key: str):
     val = services.get_app_data(key)[0]
@@ -161,10 +166,10 @@ async def verify_token(request: Request):
     else:
         print(token_data)
 
-@app.post("/increment_login_attempts/")
+@app.post("/increment_login_attempts")
 async def increment_login_attempts(request: Request):
     data = await request.json()
     username = data['username']
-    user_login_attempts = await services.increment_login_attempts(username)[0]
+    user_login_attempts = await services.increment_login_attempts(username)
     login_attempts_data = {'username' : username, 'no_of_attempts' : user_login_attempts[2], 'last_attempt': user_login_attempts[3]}
     return {"status": "success", 'login_attempts_data':login_attempts_data}

@@ -169,22 +169,25 @@ async def remove_token(token):
 async def get_login_attempts(username):
     q = "SELECT * FROM `login_attempts` WHERE username=?"
     data = exec_select_query(q, username)
-    data[0][3] = datetime.strptime(data[0][3], DATE_TIME_FORMAT)
-    if data[0][3] + timedelta(days=USER_BLOCK_TIME['day'], hours=USER_BLOCK_TIME['hour'], minutes=USER_BLOCK_TIME['minute']) < datetime.now():
-        q = "DELETE FROM `login_attempts` WHERE username=?"
-        exec_insert_query(q, username)
-        data = []
+    print(data)
+    if len(data) > 0:
+        data = list(data[0])
+        data[3] = datetime.strptime(data[3], DATE_TIME_FORMAT)
+        if data[3] + timedelta(days=USER_BLOCK_TIME['day'], hours=USER_BLOCK_TIME['hour'], minutes=USER_BLOCK_TIME['minute']) < datetime.now():
+            q = "DELETE FROM `login_attempts` WHERE username=?"
+            exec_insert_query(q, username)
+            data = []
     return data
 
 async def increment_login_attempts(username):
     res_login_attempts = await get_login_attempts(username)
     if len(res_login_attempts) == 0:
         q = "INSERT INTO `login_attempts` (username, attempts_number, last_time_changed) VALUES (?, ? ,?)"
-        exec_insert_query(q, username, 0, None)
+        exec_insert_query(q, username, 0, datetime.now().strftime(DATE_TIME_FORMAT))
         res_login_attempts = await get_login_attempts(username)
 
     q="UPDATE `login_attempts` SET attempts_number=?, last_time_changed=? WHERE username=?"
-    exec_insert_query(q, res_login_attempts[0][2] + 1, datetime.now().strftime(DATE_TIME_FORMAT), username)
+    exec_insert_query(q, res_login_attempts[2] + 1, datetime.now().strftime(DATE_TIME_FORMAT), username)
 
     return await get_login_attempts(username)
 

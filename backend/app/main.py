@@ -65,11 +65,9 @@ async def login(request: Request):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials, account locked")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
     elif res['status'] == 'success':
+        # TODO: Erase from login_attempts table
         return {"status": "success", 'user': res['user']}
     
-# TODO: DO THIS HERE IN SESSION OR IN DB, SESSION TABLE
-# TODO: {user_id:{"login_time":ewww, "login_counter": 0, "is_connected": False, "user": {"user_id": 1, "username": "admin", "email": ""}}
-
 @app.get("/logout")
 async def logout(request: Request):
     if not app.session['is_connected']:

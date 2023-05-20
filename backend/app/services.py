@@ -158,4 +158,6 @@ async def send_forgot_password(email, token):
 async def increment_login_attempts(username):
     url = f"{DB_URL}/increment_login_attempts"
     res_increment_login_attempts = httpx.post(url, json={'username': username}, timeout=None)
-    return res_increment_login_attempts.json()['login_attempts_data']
+    res_increment_login_attempts = res_increment_login_attempts.json()
+    print(res_increment_login_attempts)
+    return res_increment_login_attempts['login_attempts_data']
