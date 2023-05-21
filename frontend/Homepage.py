@@ -19,7 +19,7 @@ st.markdown("""
     
     Please be kind and grade us with 100 😎.
 
-    ### Vulnurabilities:
+    ### Vulnerabilities:
     - [x] SQL Injection:
         - [x] [REGISTER : username] 1' OR 'a'='a'; drop table 'tokens' --
         - [x] [LOGIN : username] a' OR '1'='1'; drop table 'users' --
