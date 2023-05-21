@@ -6,7 +6,7 @@ import secrets
 import asyncio
 
 
-def create_database():
+async def create_database():
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
     cursor.execute(
@@ -58,45 +58,63 @@ def create_database():
     conn.close()
 
 
-def init_app():
-    create_database()
-    if len(get_app_data("salt")) == 0:
-        set_app_data("salt", secrets.token_hex(32))
+async def init_app():
+    await create_database()
+    if len(await get_app_data("salt")) == 0:
+        await set_app_data("salt", secrets.token_hex(32))
 
 
-def set_app_data(key, value):
+async def set_app_data(key, value):
     q = "INSERT INTO `app` (key, value) VALUES (?,?)"
-    exec_insert_query(q, key, value)
+    await exec_insert_query(q, key, value)
 
 
-def get_app_data(key):
+async def get_app_data(key):
     q = "SELECT value FROM `app` WHERE key=?"
-    value = exec_select_query(q, key)
+    value = await exec_select_query(q, key)
     return value
 
 
-def exec_select_query(q, *params):
+# async def exec_select_query(q, *params):
 
+#     # Connect to the database
+#     conn = sqlite3.connect(DBFILE)
+#     cursor = conn.cursor()
+#     if len(params) > 0:
+#         cursor.execute(q, params)
+#     else:
+#         cursor.executescript(q)
+#     result = cursor.fetchall()
+#     # Close the connection
+#     conn.close()
+#     return result
+
+async def exec_select_query(q, *params):
+    print(q)
+    print(params)
     # Connect to the database
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
     if len(params) > 0:
         cursor.execute(q, params)
     else:
-        cursor.execute(q)
+        cursor.executescript(q)
     result = cursor.fetchall()
     # Close the connection
     conn.close()
     return result
 
 
-def exec_insert_query(q, *params):
-
+async def exec_insert_query(q, *params):
+    print(q)
+    print(params)
     # Connect to the database
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
-
-    cursor.execute(q, params)
+    if len(params) > 0:
+        cursor.execute(q, params)
+    else:
+        cursor.executescript(q)
     conn.commit()
 
     # Close the connection
@@ -105,70 +123,80 @@ def exec_insert_query(q, *params):
 
 async def get_all_clients():
     q = "SELECT * FROM `clients`"
-    results = exec_select_query(q)
+    results = await exec_select_query(q)
     return results
 
 
-def get_all_users():
+async def get_all_users():
     q = "SELECT * FROM `users`"
-    results = exec_select_query(q)
+    results = await exec_select_query(q)
     return results
 
-# [SQL Injection example] 1 OR 'a'='a' --
-def get_client_by_id(client_id, secure_mode= True):
+
+async def get_client_by_id(client_id, secure_mode= True):
     if not secure_mode:
         q = f"SELECT * FROM `clients` WHERE client_id='{client_id}'"
-        return exec_select_query(q)
+        return await exec_select_query(q)
     else:
         q = "SELECT * FROM `clients` WHERE client_id=?"
-        return exec_select_query(q, client_id)
+        return await exec_select_query(q, client_id)
 
 
-def get_client_by_email(email):
+async def get_client_by_email(email, secure_mode):
+    print("get_client_by_email ",email)
+    if not secure_mode:
+        q = f"SELECT * FROM `clients` WHERE client_email='{email}'"
+        return await exec_select_query(q)
     q = "SELECT * FROM `clients` WHERE client_email=?"
-    return exec_select_query(q, email)
+    return await exec_select_query(q, email)
 
 
-def get_user_by_email(email, secure_mode):
+async def get_user_by_email(email, secure_mode):
     if not secure_mode:
         q = f"SELECT * FROM `users` WHERE user_email='{email}'"
-        return exec_select_query(q)
+        return await exec_select_query(q)
     q = "SELECT * FROM `users` WHERE user_email=?"
-    return exec_select_query(q, email)
+    return await exec_select_query(q, email)
 
 
-def get_user_by_user_id(user_id):
+async def get_user_by_user_id(user_id):
     q = "SELECT * FROM `users` WHERE user_id=?"
-    return exec_select_query(q, user_id)
+    return await exec_select_query(q, user_id)
 
 
-def get_user_by_username(username, secure_mode):
+async def get_user_by_username(username, secure_mode):
     if not secure_mode:
-        q = f"SELECT * FROM `users` WHERE user_name='{username}'"
-        return exec_select_query(q)
+        q = f"SELECT * FROM 'users' WHERE user_name='{username}'"
+
+        return await exec_select_query(q)
     else:
         q = "SELECT * FROM `users` WHERE user_name=?"
-        return exec_select_query(q, username)
+        return await exec_select_query(q, username)
 
 
-def create_new_user(username, hashed_password, email, secure_mode):
+async def create_new_user(username, hashed_password, email, secure_mode):
     if not secure_mode:
         q = f"INSERT INTO `users` (user_name, user_password, user_email, password_history) VALUES ('{username}', '{hashed_password}', '{email}', '{hashed_password}')"
-        exec_insert_query(q)
+        await exec_insert_query(q)
     else:
         q = "INSERT INTO `users` (user_name, user_password, user_email, password_history) VALUES (?, ?, ?, ?)"
-        exec_insert_query(q, username, hashed_password, email, hashed_password)
+        await exec_insert_query(q, username, hashed_password, email, hashed_password)
 
 
-async def create_new_client(name, email, phone, city):
-    q = "INSERT INTO `clients` (client_name, client_email, client_phone, client_city) VALUES (?, ?, ?, ?)"
-    exec_insert_query(q, name, email, phone, city)
+async def create_new_client(name, email, phone, city, secure_mode):
+    print(secure_mode)
+    if not secure_mode:
+        q = f"INSERT INTO `clients` (client_name, client_email, client_phone, client_city) VALUES ('{name}', '{email}', '{phone}', '{city}')"
+        await exec_insert_query(q)
+    else:
+        q = "INSERT INTO `clients` (client_name, client_email, client_phone, client_city) VALUES (?, ?, ?, ?)"
+        await exec_insert_query(q, name, email, phone, city)
 
 
-def update_user(user_id, username, password, email):
+async def update_user(user_id, username, password, email):
     q = "UPDATE `users` SET user_name=?, user_password=?, user_email=? WHERE user_id=?"
-    exec_insert_query(q, username, password, email, user_id)
-    return get_user_by_user_id(user_id)
+    await exec_insert_query(q, username, password, email, user_id)
+    return await get_user_by_user_id(user_id)
 
 
 async def reset_password(email, password, password_history):
@@ -176,8 +204,8 @@ async def reset_password(email, password, password_history):
         password_history = password_history[-PASSWORD_HISTORY_LENGTH:]
 
     q = "UPDATE `users` SET user_password=?, password_history=? WHERE user_email=?"
-    exec_insert_query(q, password, ",".join(password_history), email)
-    return get_user_by_email(email)
+    await exec_insert_query(q, password, ",".join(password_history), email)
+    return await get_user_by_email(email)
 
 
 async def change_password(username, password, password_history, secure_mode):
@@ -186,8 +214,8 @@ async def change_password(username, password, password_history, secure_mode):
         password_history = password_history[-PASSWORD_HISTORY_LENGTH:]
 
     q = "UPDATE `users` SET user_password=?, password_history=? WHERE user_name=?"
-    exec_insert_query(q, password, ",".join(password_history), username)
-    return get_user_by_username(username, secure_mode)
+    await exec_insert_query(q, password, ",".join(password_history), username)
+    return await get_user_by_username(username, secure_mode)
 
 
 def check_old_passwords(password, old_passwords):
@@ -197,42 +225,41 @@ def check_old_passwords(password, old_passwords):
 
 
 async def save_new_token(email, token):
-    # token = "24267ffbc9865f311a0a33d1c09dc3997e5e590b"
     db_token = await get_token_data_by_mail(email)
     if len(db_token) > 0:
         await remove_token_by_mail(email)
     q = "INSERT INTO `tokens` (user_email, token, expiry) VALUES (?, ?, ?)"
-    exec_insert_query(q, email, token, (datetime.now() + timedelta(minutes=10)).strftime(DATE_TIME_FORMAT))
+    await exec_insert_query(q, email, token, (datetime.now() + timedelta(minutes=10)).strftime(DATE_TIME_FORMAT))
 
 
 async def get_token_data_by_mail(email):
     q = "SELECT token FROM `tokens` WHERE user_email=?"
-    return exec_select_query(q, email)
+    return await exec_select_query(q, email)
 
 
 async def get_token_data_by_token(token):
     q = "SELECT * FROM `tokens` WHERE token=?"
-    return exec_select_query(q, token)
+    return await exec_select_query(q, token)
 
 
 async def remove_token_by_mail(email):
     q = "DELETE FROM `tokens` WHERE user_email=?"
-    exec_insert_query(q, email)
+    await exec_insert_query(q, email)
 
 
 async def remove_token(token):
     q = "DELETE FROM `tokens` WHERE token=?"
-    exec_insert_query(q, token)
+    await exec_insert_query(q, token)
 
 
 async def delete_login_attempt(username):
     q = "DELETE FROM `login_attempts` WHERE username=?"
-    exec_insert_query(q, username)
+    await exec_insert_query(q, username)
 
 
 async def get_login_attempts(username):
     q = "SELECT * FROM `login_attempts` WHERE username=?"
-    data = exec_select_query(q, username)
+    data = await exec_select_query(q, username)
 
     if len(data) > 0:
         data = list(data[0])
@@ -251,10 +278,10 @@ async def increment_login_attempts(username):
     res_login_attempts = await get_login_attempts(username)
     if len(res_login_attempts) == 0:
         q = "INSERT INTO `login_attempts` (username, attempts_number, last_time_changed) VALUES (?, ? ,?)"
-        exec_insert_query(q, username, 0, datetime.now().strftime(DATE_TIME_FORMAT))
+        await exec_insert_query(q, username, 0, datetime.now().strftime(DATE_TIME_FORMAT))
         res_login_attempts = await get_login_attempts(username)
 
     q = "UPDATE `login_attempts` SET attempts_number=?, last_time_changed=? WHERE username=?"
-    exec_insert_query(q, res_login_attempts[2] + 1, datetime.now().strftime(DATE_TIME_FORMAT), username)
+    await exec_insert_query(q, res_login_attempts[2] + 1, datetime.now().strftime(DATE_TIME_FORMAT), username)
 
     return await get_login_attempts(username)

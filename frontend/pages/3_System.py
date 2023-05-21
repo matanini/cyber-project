@@ -2,11 +2,12 @@ import streamlit as st
 import os
 import re
 import httpx
+from config.sidebar import init_page
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
 st.set_page_config(page_title="System", page_icon=":smiley:")
-
+init_page(st)
 def check_email(email):
         format = r"^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$"
         return re.match(format, email)
@@ -66,7 +67,7 @@ submit = form.form_submit_button("Create new client")
 if submit:
     check_input(name, email, phone, city)
     url = f"{BACKEND_URL}/clients/create/"
-    data = {"name": name, "email": email, "phone": phone, "city": city}
+    data = {"name": name, "email": email, "phone": phone, "city": city, "secure_mode": st.session_state["secure_mode"]}
     res = httpx.post(url, json=data, timeout=None)
     if res.status_code == 200:
         st.session_state['client_created'] = True

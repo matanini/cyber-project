@@ -68,8 +68,9 @@ async def create_client(request: Request):
     email = data['email']
     phone = data['phone']
     city = data['city']
-
-    client = await services.create_new_client(name, email, phone, city)
+    secure_mode = data['secure_mode']
+    print("backend create_client", name, email, phone, city, secure_mode)
+    client = await services.create_new_client(name, email, phone, city, secure_mode)
     if not client:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client already exists")
     else:

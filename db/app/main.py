@@ -22,27 +22,27 @@ app = FastAPI(title="DB")
 
 @app.on_event("startup")
 async def startup_event():
-    services.init_app()
+    await services.init_app()
 
 @app.get('/test')
 async def test(client_id: str, mode : bool):
-   return services.get_client_by_id(client_id, mode)
+   return await services.get_client_by_id(client_id, mode)
 
 @app.get('/drop_table')
 async def drop_table():
     q = "DROP TABLE `login_attempts`"
-    services.exec_insert_query(q)
-    services.create_database()
+    await services.exec_insert_query(q)
+    await services.create_database()
 
 @app.get("/app/")
 async def get_app_value(request: Request, key: str):
-    val = services.get_app_data(key)[0]
-    return {"key":key, "value": val[0]}
+    val = await services.get_app_data(key)
+    return {"key":key, "value": val[0][0]}
 
 @app.get("/users/all")
 async def get_all_users(request: Request):
     users_list = []
-    users = services.get_all_users()
+    users = await services.get_all_users()
     for user in users:
         users_list.append({
             "user_id": user[0], 
@@ -54,11 +54,11 @@ async def get_all_users(request: Request):
 @app.get("/users/")
 async def get_user(request: Request, mode: str, ident: int|str, secure_mode:bool):
     if mode == "email":
-        user = services.get_user_by_email(ident, secure_mode)
+        user = await services.get_user_by_email(ident, secure_mode)
     elif mode == "user_id":
-        user = services.get_user_by_user_id(ident)
+        user = await services.get_user_by_user_id(ident)
     elif mode == "username":
-        user = services.get_user_by_username(ident, secure_mode)
+        user = await services.get_user_by_username(ident, secure_mode)
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request")
     if user:
@@ -88,14 +88,14 @@ async def create_user(request:Request):
     password = data['password']
     email = data['email']
     secure_mode = data['secure_mode']
-
-    user_username = services.get_user_by_username(username, secure_mode)
-    user_email = services.get_user_by_email(email, secure_mode)
+    print("db user create", username, password, email, secure_mode)
+    user_username = await services.get_user_by_username(username, secure_mode)
+    user_email = await services.get_user_by_email(email, secure_mode)
 
     if user_username or user_email:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists")
     else:
-        services.create_new_user(username, password, email, secure_mode)
+        await services.create_new_user(username, password, email, secure_mode)
         return {"status": "success", "user": {"username": username, "email": email}}
     
 @app.post("/clients/create/")
@@ -105,11 +105,13 @@ async def create_client(request: Request):
     email = data['email']
     phone = data['phone']
     city = data['city']
-    client = services.get_client_by_email(email)
+    secure_mode = data['secure_mode']
+    print("db client create", name, email, phone, city, secure_mode)
+    client = await services.get_client_by_email(email, secure_mode)
     if client:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client already exists")
     else:
-        await services.create_new_client(name, email, phone, city)
+        await services.create_new_client(name, email, phone, city, secure_mode)
         return {"status": "success", "client": {"name": name, "email": email, "phone": phone, "city": city}}
 
 @app.post("/users/login/")
@@ -118,10 +120,11 @@ async def login(request: Request):
     username = data['username']
     password = data['password']
     secure_mode = data['secure_mode']
-                        
-    user = services.get_user_by_username(username, secure_mode)
-
+    print(username, password, secure_mode)
+    user = await services.get_user_by_username(username, secure_mode)
+    print(user)
     if user:
+        print("login-db", user[0][2], password)
         if user[0][2] == password:
             await services.delete_login_attempt(username)
             return {"status": "success", "user" :{"user_id": user[0][0], "username": user[0][1], "email": user[0][3]}}
@@ -138,11 +141,11 @@ async def change_password(request: Request):
     hashed_new_password = data['hashed_new_password']
     secure_mode = data['secure_mode']
     
-    user = services.get_user_by_username(username, secure_mode)
+    user = await services.get_user_by_username(username, secure_mode)
     if user:
         if user[0][2] == hashed_old_password:
             password_history = user[0][-1].split(",")
-            if services.check_old_passwords(hashed_new_password, password_history):
+            if await services.check_old_passwords(hashed_new_password, password_history):
                 password_history.append(hashed_new_password)
                 await services.change_password(username, hashed_new_password, password_history)
                 return {"status": "success"}
@@ -159,13 +162,13 @@ async def reset_password(request: Request):
     email = data['email']
     password = data['password']
 
-    user = services.get_user_by_email(email)
+    user = await services.get_user_by_email(email)
     print("reset_password db", user)
     if user:
         password_history = user[0][-1].split(",")
         print("password_history", password_history)
         print("password", password)
-        if services.check_old_passwords(password, password_history):
+        if await services.check_old_passwords(password, password_history):
             password_history.append(password)
             await services.reset_password(email, password, password_history)
             return {"status": "success"}
@@ -179,7 +182,7 @@ async def save_token(request: Request):
     data = await request.json()
     email = data['email']
     token = data['token']
-    user = services.get_user_by_email(email)
+    user = await services.get_user_by_email(email)
     if user:
         await services.save_new_token(email, token)
         return {"status": "success"}

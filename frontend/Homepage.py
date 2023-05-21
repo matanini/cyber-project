@@ -1,27 +1,12 @@
 import streamlit as st
-import httpx
 import os
+from config.sidebar import init_page
 
 BACKEND_URL = os.getenv('BACKEND_URL')
 
 st.set_page_config(page_title="Homepage", page_icon=":smiley:")
-def init_page():
-    if 'user' not in st.session_state :
-        st.session_state['user'] = None
-    
-    _, col_sidebar ,_=st.sidebar.columns([1,3,1]) 
-    _, col_sidebar_user_type ,_=st.sidebar.columns([1,2,1]) 
-    if st.session_state['user']:
-        col_sidebar.write("User connected: ")
-        col_sidebar.write(st.session_state['user'])
-    else:
-        col_sidebar.write("No user is logged in")
-        
-    # Security level
 
-    # Logo + ©️
-
-init_page()
+init_page(st)
 
 st.image("https://i.ibb.co/tKm1VRH/comunication-ltd.png")
 
@@ -33,5 +18,12 @@ st.markdown("""
     We are excited to see you here!   
     
     Please be kind and grade us with 100 😎.
+
+    ### Vulnurabilities:
+    - [x] SQL Injection:
+        - [x] [REGISTER : username] 1' OR 'a'='a'; drop table 'tokens' --
+        - [x] [LOGIN : username] a' OR '1'='1'; drop table 'users' --
+        - [x] [SYSTEM : city] w'); drop table 'clients' --
+    - [x] XSS
 
 """)

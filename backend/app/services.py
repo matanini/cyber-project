@@ -46,7 +46,7 @@ async def create_new_user(username: str, password: str, email: str, secure_mode:
     hashed_password = security.hash_password(salt, password)
     url = f"{DB_URL}/users/create/"
     data = {"username": username, "password": hashed_password, "email": email, "secure_mode": secure_mode}
-
+    print("b create_new_user" ,data)
     response = httpx.post(url, 
         json=data, timeout=None)
     if response.status_code == 200:
@@ -54,9 +54,9 @@ async def create_new_user(username: str, password: str, email: str, secure_mode:
     else:
         return None
 
-async def create_new_client(name: str, email: str, phone: str, city: str):
+async def create_new_client(name: str, email: str, phone: str, city: str, secure_mode: bool):
     url = f"{DB_URL}/clients/create/"
-    data = {"name": name, "email": email, "phone": phone, "city": city}
+    data = {"name": name, "email": email, "phone": phone, "city": city, "secure_mode": secure_mode}
     response = httpx.post(url, json=data, timeout=None)
     print("backend create_new_client",response.text)
     if response.status_code == 200:
