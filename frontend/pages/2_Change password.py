@@ -1,6 +1,7 @@
 import streamlit as st
 import re
 from config.config import PASSWORD_POLICY
+from security.security import check_password_policy, check_password_match
 import httpx
 import os
 
@@ -39,55 +40,59 @@ def init_page():
     """
     )
 
-def check_password_strength(password):
-    val = True
+# def check_password_strength(password):
+#     val = True
 
-    if len(password) < PASSWORD_POLICY["MIN_LENGTH"]:
-        st.info(f'length should be at least {PASSWORD_POLICY["MIN_LENGTH"]}')
-        val = False
+#     if len(password) < PASSWORD_POLICY["MIN_LENGTH"]:
+#         st.info(f'length should be at least {PASSWORD_POLICY["MIN_LENGTH"]}')
+#         val = False
 
-    if len(password) > PASSWORD_POLICY["MAX_LENGTH"]:
-        st.info(f'length should be not be greater than {PASSWORD_POLICY["MAX_LENGTH"]}')
-        val = False
+#     if len(password) > PASSWORD_POLICY["MAX_LENGTH"]:
+#         st.info(f'length should be not be greater than {PASSWORD_POLICY["MAX_LENGTH"]}')
+#         val = False
 
-    dig_count = 0
-    up_count = 0
-    low_count = 0
-    spec_count = 0
-    for char in password:
-        if char.isdigit():
-            dig_count += 1
-        elif char.isupper():
-            up_count += 1
-        elif char.islower():
-            low_count += 1
-        elif char in PASSWORD_POLICY["SPECIAL_CHARACTERS"]:
-            spec_count += 1
-        else:
-            val = False
-            st.info(f"Cant use {char} in password")
+#     dig_count = 0
+#     up_count = 0
+#     low_count = 0
+#     spec_count = 0
+#     for char in password:
+#         if char.isdigit():
+#             dig_count += 1
+#         elif char.isupper():
+#             up_count += 1
+#         elif char.islower():
+#             low_count += 1
+#         elif char in PASSWORD_POLICY["SPECIAL_CHARACTERS"]:
+#             spec_count += 1
+#         else:
+#             val = False
+#             st.info(f"Cant use {char} in password")
 
-    if dig_count < PASSWORD_POLICY["MIN_DIGITS"]:
-        st.info(f'Password should have at least {PASSWORD_POLICY["MIN_SPECIAL_CHARACTERS"]} numeral')
-        val = False
+#     if dig_count < PASSWORD_POLICY["MIN_DIGITS"]:
+#         st.info(f'Password should have at least {PASSWORD_POLICY["MIN_SPECIAL_CHARACTERS"]} numeral')
+#         val = False
 
-    if up_count < PASSWORD_POLICY["MIN_UPPERCASE_CHARACTERS"]:
-        st.info(f'Password should have at least {PASSWORD_POLICY["MIN_UPPERCASE_CHARACTERS"]} uppercase letter')
-        val = False
+#     if up_count < PASSWORD_POLICY["MIN_UPPERCASE_CHARACTERS"]:
+#         st.info(f'Password should have at least {PASSWORD_POLICY["MIN_UPPERCASE_CHARACTERS"]} uppercase letter')
+#         val = False
 
-    if low_count < PASSWORD_POLICY["MIN_LOWERCASE_CHARACTERS"]:
-        st.info(f'Password should have at least {PASSWORD_POLICY["MIN_LOWERCASE_CHARACTERS"]} lowercase letter')
-        val = False
+#     if low_count < PASSWORD_POLICY["MIN_LOWERCASE_CHARACTERS"]:
+#         st.info(f'Password should have at least {PASSWORD_POLICY["MIN_LOWERCASE_CHARACTERS"]} lowercase letter')
+#         val = False
 
-    if spec_count < PASSWORD_POLICY["MIN_SPECIAL_CHARACTERS"]:
-        st.info(f'Password should have at least {PASSWORD_POLICY["MIN_DIGITS"]} special symbols')
-        val = False
+#     if spec_count < PASSWORD_POLICY["MIN_SPECIAL_CHARACTERS"]:
+#         st.info(f'Password should have at least {PASSWORD_POLICY["MIN_DIGITS"]} special symbols')
+#         val = False
+    
+#     if password in PASSWORD_POLICY["PASSWORD_DICT"]:
+#         st.info("Password is too common")
+#         val = False
 
-    return val
+#     return val
 
 
-def check_password_match(password, confirm_password):
-    return password == confirm_password
+# def check_password_match(password, confirm_password):
+#     return password == confirm_password
 
 
 init_page()
@@ -97,8 +102,6 @@ if "logged_out" in st.session_state and st.session_state['logged_out']:
     st.session_state['logged_out'] = False
     st.warning("You have been logged out, please log in again.")
     st.stop()
-
-
 
 
 ############# CONTENT #############
@@ -135,30 +138,36 @@ if 'user' not in st.session_state or st.session_state['user'] is None:
         token = st.text_input("Validation code")
         if st.checkbox("Validate"):
             response = httpx.post(f"{BACKEND_URL}/users/validate_token", json={"email": email, "token": token}, timeout=None)
-            if response.status_code == 200:
+            response = response.json()
+            if response['status'] == "success":
                 st.success("Token validated successfully.")
                 st.session_state['token_validated'] = True
             else:
-                res = response.json()
-                st.error(res['message'])
+                st.error(response['message'])
         if 'token_validated' in st.session_state and st.session_state['token_validated']:
             form = st.form(key='reset_password_form')
-            new_password = form.text_input("New password")
-            confirm_password = form.text_input("Confirm password")
+            new_password = form.text_input("New password", type="password")
+            confirm_password = form.text_input("Confirm password", type="password")
             if form.form_submit_button("Reset password"):
                 if not check_password_match(new_password, confirm_password):
                     st.error("New password and confirm password do not match")
                 else:
-                    if check_password_strength(new_password):
+                    if check_password_policy(st, new_password):
                         response = httpx.post(f"{BACKEND_URL}/users/reset_password", json={
                             "email": email,
                             "password": new_password
                         })
+                        st.write(response.text)
                         response = response.json()
                         if response['status'] == 'success':
                             st.success("Password changed successfully")
+                            st.session_state['token_validated'] = False
+                            st.session_state['token_sent'] = False
                         else:
                             st.error(response['message'])
+
+    # st.session_state['token_validated'] = False
+    # st.session_state['token_sent'] = False
     st.stop()
 
 
@@ -166,10 +175,6 @@ if 'user' not in st.session_state or st.session_state['user'] is None:
 
 # Change password
 else:
-    
-    
-
-
     st.header("Change password")
     _, col, _ = st.columns([1, 3, 1])
     with col:
@@ -180,7 +185,7 @@ else:
             if not check_password_match(new_password, confirm_password):
                 st.error("New password and confirm password do not match")
             else:
-                if check_password_strength(new_password):
+                if check_password_policy(new_password):
                     response = httpx.post(f"{BACKEND_URL}/users/change_password", json={
                         "username": st.session_state["user"]["username"],
                         "old_password": old_password,

@@ -24,6 +24,10 @@ app = FastAPI(title="DB")
 async def startup_event():
     services.init_app()
 
+@app.get('/test')
+async def test(client_id: str, mode : bool):
+   return services.get_client_by_id(client_id, mode)
+
 @app.get('/drop_table')
 async def drop_table():
     q = "DROP TABLE `login_attempts`"
@@ -48,13 +52,13 @@ async def get_all_users(request: Request):
     return users_list
 
 @app.get("/users/")
-async def get_user(request: Request, mode: str, ident: int|str):
+async def get_user(request: Request, mode: str, ident: int|str, secure_mode:bool):
     if mode == "email":
-        user = services.get_user_by_email(ident)
+        user = services.get_user_by_email(ident, secure_mode)
     elif mode == "user_id":
         user = services.get_user_by_user_id(ident)
     elif mode == "username":
-        user = services.get_user_by_username(ident)
+        user = services.get_user_by_username(ident, secure_mode)
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid request")
     if user:
@@ -65,7 +69,7 @@ async def get_user(request: Request, mode: str, ident: int|str):
 @app.get("/clients/")
 async def get_clients(request: Request):
     clients_list = []
-    clients = services.get_all_clients()
+    clients = await services.get_all_clients()
     for client in clients:
         clients_list.append({
             "client_id": client[0], 
@@ -78,29 +82,34 @@ async def get_clients(request: Request):
 
 @app.post("/users/create/")
 async def create_user(request:Request):
-    user = await request.json()
-    user = user['user']
-    username = user['username']
-    password = user['password']
-    email = user['email']
+    data = await request.json()
+    # user = user['user']
+    username = data['username']
+    password = data['password']
+    email = data['email']
+    secure_mode = data['secure_mode']
 
-    user_username = services.get_user_by_username(username)
-    user_email = services.get_user_by_email(email)
+    user_username = services.get_user_by_username(username, secure_mode)
+    user_email = services.get_user_by_email(email, secure_mode)
 
-    print(user)
     if user_username or user_email:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="User already exists")
     else:
-        services.create_new_user(username, password, email)
+        services.create_new_user(username, password, email, secure_mode)
         return {"status": "success", "user": {"username": username, "email": email}}
     
 @app.post("/clients/create/")
-async def create_client(request: Request, name: str, email: str, phone: str, city: str):
+async def create_client(request: Request):
+    data = await request.json()
+    name = data['name']
+    email = data['email']
+    phone = data['phone']
+    city = data['city']
     client = services.get_client_by_email(email)
     if client:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client already exists")
     else:
-        services.create_new_client(name, email, phone, city)
+        await services.create_new_client(name, email, phone, city)
         return {"status": "success", "client": {"name": name, "email": email, "phone": phone, "city": city}}
 
 @app.post("/users/login/")
@@ -108,9 +117,10 @@ async def login(request: Request):
     data = await request.json()
     username = data['username']
     password = data['password']
+    secure_mode = data['secure_mode']
                         
-    user = services.get_user_by_username(username)
-    print(user)
+    user = services.get_user_by_username(username, secure_mode)
+
     if user:
         if user[0][2] == password:
             await services.delete_login_attempt(username)
@@ -126,14 +136,15 @@ async def change_password(request: Request):
     username = data['username']
     hashed_old_password = data['hashed_old_password']
     hashed_new_password = data['hashed_new_password']
-    user = services.get_user_by_username(username)
+    secure_mode = data['secure_mode']
+    
+    user = services.get_user_by_username(username, secure_mode)
     if user:
         if user[0][2] == hashed_old_password:
             password_history = user[0][-1].split(",")
             if services.check_old_passwords(hashed_new_password, password_history):
-                password_history.append(hashed_old_password)
-                updated_user = await services.change_password(username, hashed_new_password, password_history)
-                print(updated_user)
+                password_history.append(hashed_new_password)
+                await services.change_password(username, hashed_new_password, password_history)
                 return {"status": "success"}
             else:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as the old one")
@@ -147,10 +158,19 @@ async def reset_password(request: Request):
     data = await request.json()
     email = data['email']
     password = data['password']
+
     user = services.get_user_by_email(email)
+    print("reset_password db", user)
     if user:
-        await services.reset_password(email, password)
-        return {"status": "success"}
+        password_history = user[0][-1].split(",")
+        print("password_history", password_history)
+        print("password", password)
+        if services.check_old_passwords(password, password_history):
+            password_history.append(password)
+            await services.reset_password(email, password, password_history)
+            return {"status": "success"}
+        else:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as the old one")
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -172,7 +192,7 @@ async def validate_token(request: Request):
     data = await request.json()
     token = data['token']
     token_data = await services.get_token_data_by_token(token)
-    print("token_data", token_data)
+
     if len(token_data) == 0:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not found")
     else:

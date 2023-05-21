@@ -12,8 +12,8 @@ async def get_app_data(key: str):
     response = httpx.get(url, timeout=None)
     return response.json()['value']
 
-async def get_user_by_username(username: str):
-    url = f"{DB_URL}/users/?mode=username&ident={username}"
+async def get_user_by_username(username: str, secure_mode):
+    url = f"{DB_URL}/users/?mode=username&ident={username}&secure_mode={secure_mode}"
     response = httpx.get(url, timeout=None)
     if response.status_code == 200:
         return response.json()['user']
@@ -41,16 +41,14 @@ async def get_all_clients():
     response = httpx.get(url, timeout=None)
     return response.json()
 
-async def create_new_user(username: str, password: str, email: str):
+async def create_new_user(username: str, password: str, email: str, secure_mode: bool):
     salt = await get_app_data("salt")
     hashed_password = security.hash_password(salt, password)
     url = f"{DB_URL}/users/create/"
-    data = {"username": username, "password": hashed_password, "email": email}
-    # for d in data:
-    #     print(d, data[d], type(data[d]))
+    data = {"username": username, "password": hashed_password, "email": email, "secure_mode": secure_mode}
+
     response = httpx.post(url, 
-        json={'user':data}, timeout=None)
-    print(response.text)
+        json=data, timeout=None)
     if response.status_code == 200:
         return response.json()['user']
     else:
@@ -59,20 +57,21 @@ async def create_new_user(username: str, password: str, email: str):
 async def create_new_client(name: str, email: str, phone: str, city: str):
     url = f"{DB_URL}/clients/create/"
     data = {"name": name, "email": email, "phone": phone, "city": city}
-    response = httpx.post(url, data=data, timeout=None)
+    response = httpx.post(url, json=data, timeout=None)
+    print("backend create_new_client",response.text)
     if response.status_code == 200:
         return response.json()['client']
     else:
         return None
     
 
-async def login(username: str, password: str, login_attempts_data: dict):
+async def login(username: str, password: str, login_attempts_data: dict, secure_mode: bool):
     if login_attempts_data['no_of_attempts'] > MAX_LOGIN_ATTEMPTS:
         return {'status' : 'error', 'message': 'Account locked, too many login attempts.'}
     salt = await get_app_data("salt")
     hashed_password = security.hash_password(salt, password)
     url = f"{DB_URL}/users/login/"
-    res = httpx.post(url, json={'username': username, 'password': hashed_password}, timeout=None)
+    res = httpx.post(url, json={'username': username, 'password': hashed_password, 'secure_mode':secure_mode}, timeout=None)
     if res.status_code == 200:
         user = res.json()['user']
         return {'status' : "success", "user" :user}
@@ -86,7 +85,6 @@ async def change_password(username: str, old_password: str, new_password: str):
     hashed_new_password = security.hash_password(salt, new_password)
     url = f"{DB_URL}/users/change_password/"
     res = httpx.post(url, json={'username': username, 'hashed_old_password': hashed_old_password, 'hashed_new_password': hashed_new_password}, timeout=None)
-    print(res.text)
     if res.status_code == 200:
         return {'status' : "success"}
     elif res.status_code == 404:
@@ -109,7 +107,7 @@ async def reset_password(email:str, password: str):
     if res.status_code == 200:
         return {"status": "success", "message": "Password reset successfully"}
     else:
-        return {"status": "error", "message": "User not found"}
+        return {"status": "error", "message": res.json()['detail'],'res_code': res.status_code}
 
 
 async def forgot_password(email: str):
