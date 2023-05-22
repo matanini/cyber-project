@@ -8,40 +8,7 @@ BACKEND_URL = os.getenv("BACKEND_URL")
 
 st.set_page_config(page_title="Welcome to Homepage", page_icon=":smiley:")
 
-# def init_page():
-#     if "user" not in st.session_state:
-#         st.session_state["user"] = None
-#     _, col_sidebar, _ = st.sidebar.columns([1, 3, 1])
-#     if st.session_state["user"] is not None:
-#         col_sidebar.subheader(f"Hello {st.session_state['user']['username']}!")
-#         if col_sidebar.button("Logout"):
-#             st.session_state["user"] = None
-#             st.session_state["logged_out"] = True
-#             st.experimental_rerun()
-#     else:
-#         col_sidebar.write("No user is logged in")
-#         col_sidebar.write("Go to Login page")
-
-#     # Security level
-#     st.sidebar.divider()
-#     _, col_sidebar, _ = st.sidebar.columns([1, 2, 1])
-#     col_sidebar.subheader("Security level")
-#     st.session_state["secure_mode"] = col_sidebar.selectbox("Select security level", ["Low", "High"]) == "High"
-
-#     # Logo + ©️
-#     st.sidebar.divider()
-#     _, col_sidebar, _ = st.sidebar.columns([1, 5, 1])
-#     col_sidebar.image("https://i.ibb.co/tKm1VRH/comunication-ltd.png", width=200)
-#     _, col_sidebar, _ = st.sidebar.columns([1, 3, 1])
-#     col_sidebar.markdown(
-#         """
-#         ©️ Communication LTD
-#     """
-#     )
-
-
 init_page(st)
-
 
 if 'user' in st.session_state and st.session_state['user'] is not None:
     st.success("You are logged in.")
@@ -65,7 +32,6 @@ def login(container):
         json_res = res.json()
         if res.status_code == 200:
             st.session_state["user"] = json_res["user"]
-            
             st.experimental_rerun()
         else:
             container.error(json_res['detail'])
@@ -90,13 +56,17 @@ def register(container):
             data = {"username": username, "password": password, "email": email, "secure_mode" : st.session_state["secure_mode"]}
             url = f"{BACKEND_URL}/register"
             res = httpx.post(url, json=data, timeout=None)
-            st.write(res.text)
+            if res.status_code == 200:
+                container.success("User registered successfully")
+            elif res.status_code == 409:
+                container.error(res.json()['detail'])
 
 
 st.image("https://i.ibb.co/tKm1VRH/comunication-ltd.png")
 
 st.title("Welcome to Communication LTD")
 st.write("Please log in or register to proceed")
+st.markdown("If you forgot your password 😕, please go to <a target='_self' href='https://localhost:8000/Change_password'>Forgot Password</a> .", unsafe_allow_html=True)
 
 
 tab_login, tab_reg = st.tabs(["Login", "Register"])

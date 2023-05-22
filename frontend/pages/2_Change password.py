@@ -2,45 +2,13 @@ import streamlit as st
 import re
 from config.config import PASSWORD_POLICY
 from config.sidebar import init_page
-from security.security import check_password_policy, check_password_match
+from security.security import check_password_policy, check_password_match, check_email
 import httpx
 import os
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
 st.set_page_config(page_title="Change password", page_icon=":smiley:")
-
-# def init_page():
-#     if "user" not in st.session_state:
-#         st.session_state["user"] = None
-#     _, col_sidebar, _ = st.sidebar.columns([1, 3, 1])
-#     if st.session_state["user"] is not None:
-#         col_sidebar.subheader(f"Hello {st.session_state['user']['username']}!")
-#         if col_sidebar.button("Logout"):
-#             st.session_state["user"] = None
-#             st.session_state["logged_out"] = True
-#             st.experimental_rerun()
-#     else:
-#         col_sidebar.write("No user is logged in")
-#         col_sidebar.write("Go to Login page")
-
-#     # Security level
-#     st.sidebar.divider()
-#     _, col_sidebar, _ = st.sidebar.columns([1, 2, 1])
-#     col_sidebar.subheader("Security level")
-#     st.session_state["secure_mode"] = col_sidebar.selectbox("Select security level", ["Low", "High"])
-
-#     # Logo + ©️
-#     st.sidebar.divider()
-#     _, col_sidebar, _ = st.sidebar.columns([1, 5, 1])
-#     col_sidebar.image("https://i.ibb.co/tKm1VRH/comunication-ltd.png", width=200)
-#     _, col_sidebar, _ = st.sidebar.columns([1, 3, 1])
-#     col_sidebar.markdown(
-#         """
-#         ©️ Communication LTD
-#     """
-#     )
-
 
 init_page(st)
 
@@ -55,11 +23,7 @@ if "logged_out" in st.session_state and st.session_state['logged_out']:
 
 # Forgot password
 if 'user' not in st.session_state or st.session_state['user'] is None:
-    def check_email(email):
-        format = r"^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$"
-        return re.match(format, email)
-
-
+    
     st.warning("You are not logged in, please log in first.")
     st.markdown("""
     If you forgot your password, Please enter your email address below.
@@ -73,8 +37,7 @@ if 'user' not in st.session_state or st.session_state['user'] is None:
                 st.success("Email sent successfully.")
                 st.session_state['token_sent'] = True 
             else:
-                res = response.json()
-                st.error(res['message'])
+                st.error(response.json()['detail'])
         else:
             st.error("Invalid email address.")
     
@@ -132,11 +95,12 @@ else:
             if not check_password_match(new_password, confirm_password):
                 st.error("New password and confirm password do not match")
             else:
-                if check_password_policy(new_password):
+                if check_password_policy(st, new_password):
                     response = httpx.post(f"{BACKEND_URL}/users/change_password", json={
                         "username": st.session_state["user"]["username"],
                         "old_password": old_password,
-                        "new_password": new_password
+                        "new_password": new_password,
+                        "secure_mode": st.session_state["secure_mode"]
                     })
                     response = response.json()
                     if response['status'] == 'success':

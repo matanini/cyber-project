@@ -3,6 +3,8 @@ import os
 import re
 import httpx
 from config.sidebar import init_page
+import streamlit.components.v1 as components
+
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
@@ -31,7 +33,7 @@ if "client_created" in st.session_state and st.session_state["client_created"]:
     st.success("Client created successfully.")
 
 
-# Clients tanle
+# Clients table
 st.header("Clients")
 url = f"{BACKEND_URL}/clients/get_all/"
 res = httpx.get(url, timeout=None)
@@ -44,15 +46,38 @@ cols[2].markdown("**Email**")
 cols[3].markdown("**Phone**") 
 cols[4].markdown("**City**") 
 
-    
-for client in clients: 
-    row = st.container() 
-    cols = row.columns(spec=[1,2,2,2,2]) 
-    cols[0].write(client["client_id"]) 
-    cols[1].write(client["name"]) 
-    cols[2].write(client["email"]) 
-    cols[3].write(client["phone"])
-    cols[4].write(client["city"]) 
+
+if st.session_state["secure_mode"]:
+    for client in clients: 
+        row = st.container() 
+        cols = row.columns(spec=[1,2,2,2,2]) 
+        
+        cols[0].write(client["client_id"]) 
+        cols[1].write(client["name"]) 
+        cols[2].write(client["email"]) 
+        cols[3].write(client["phone"])
+        cols[4].write(client["city"]) 
+else:
+    # Low security mode
+    for client in clients: 
+        row = st.container() 
+        cols = row.columns(spec=[1,2,2,2,2]) 
+        
+        with cols[0]:
+            components.html(f'{client["client_id"]}', width=0, height=0) 
+            st.write(client["client_id"]) 
+        with cols[1]:
+            components.html(f'{client["name"]}', width=0, height=0) 
+            st.write(client["name"]) 
+        with cols[2]:
+            components.html(f'{client["email"]}', width=0, height=0) 
+            st.write(client["email"]) 
+        with cols[3]:
+            components.html(f'{client["phone"]}', width=0, height=0)
+            st.write(client["phone"])
+        with cols[4]:
+            components.html(f'{client["city"]}', width=0, height=0) 
+            st.write(client["city"]) 
 
 st.divider()
 # Create new client

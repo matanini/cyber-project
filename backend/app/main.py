@@ -54,11 +54,12 @@ async def change_password(request: Request):
     username = data['username']
     old_password = data['old_password']
     new_password = data['new_password']
+    secure_mode = data['secure_mode']
 
     if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not logged in")
         
-    res = await services.change_password(username, old_password, new_password)
+    res = await services.change_password(username, old_password, new_password, secure_mode)
     return res
     
 @app.post("/clients/create/")
@@ -87,8 +88,9 @@ async def forgot_password(request: Request):
     email = data['email']
 
     res = await services.forgot_password(email)
+    print(res)
     if res['status'] == 'error':
-        raise HTTPException(status_code=int(res['res_code']), detail=res['message'])
+        raise HTTPException(status_code=res['res_code'], detail=res['message'])
     else:
         return res
     

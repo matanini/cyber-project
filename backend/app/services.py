@@ -79,12 +79,12 @@ async def login(username: str, password: str, login_attempts_data: dict, secure_
         return {"status": "error", "message": "Invalid credentials", 'is_locked': login_attempts_data['no_of_attempts'] == MAX_LOGIN_ATTEMPTS}
     
     
-async def change_password(username: str, old_password: str, new_password: str):
+async def change_password(username: str, old_password: str, new_password: str, secure_mode: bool):
     salt = await get_app_data("salt")
     hashed_old_password = security.hash_password(salt, old_password)
     hashed_new_password = security.hash_password(salt, new_password)
     url = f"{DB_URL}/users/change_password/"
-    res = httpx.post(url, json={'username': username, 'hashed_old_password': hashed_old_password, 'hashed_new_password': hashed_new_password}, timeout=None)
+    res = httpx.post(url, json={'username': username, 'hashed_old_password': hashed_old_password, 'hashed_new_password': hashed_new_password, "secure_mode":secure_mode}, timeout=None)
     if res.status_code == 200:
         return {'status' : "success"}
     elif res.status_code == 404:
@@ -112,8 +112,9 @@ async def reset_password(email:str, password: str):
 
 async def forgot_password(email: str):
     user = await get_user_by_email(email)
+    print(user)
     if user is None:
-        return {"status": "error", "message": "User not found"}
+        return {"status": "error", "message": "User not found", 'res_code': 404}
     
     # generate a random token and send it to the user's email
     # the token will be used to reset the password

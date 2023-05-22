@@ -24,6 +24,7 @@ st.markdown("""
         - [x] [REGISTER : username] 1' OR 'a'='a'; drop table 'tokens' --
         - [x] [LOGIN : username] a' OR '1'='1'; drop table 'users' --
         - [x] [SYSTEM : city] w'); drop table 'clients' --
-    - [x] XSS
+    - [x] Stored XSS:
+        - [x] [SYSTEM : any input] <script>alert("XSS MUAHAHAHAHA 😈")</script>
 
 """)

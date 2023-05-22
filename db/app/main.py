@@ -136,6 +136,7 @@ async def login(request: Request):
 @app.post("/users/change_password/")
 async def change_password(request: Request):
     data = await request.json()
+    print(data)
     username = data['username']
     hashed_old_password = data['hashed_old_password']
     hashed_new_password = data['hashed_new_password']
@@ -145,9 +146,9 @@ async def change_password(request: Request):
     if user:
         if user[0][2] == hashed_old_password:
             password_history = user[0][-1].split(",")
-            if await services.check_old_passwords(hashed_new_password, password_history):
+            if services.check_old_passwords(hashed_new_password, password_history):
                 password_history.append(hashed_new_password)
-                await services.change_password(username, hashed_new_password, password_history)
+                await services.change_password(username, hashed_new_password, password_history, secure_mode)
                 return {"status": "success"}
             else:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as the old one")

@@ -90,24 +90,27 @@ async def get_app_data(key):
 #     return result
 
 async def exec_select_query(q, *params):
-    print(q)
-    print(params)
+    print(q, params)
+    # print(params)
     # Connect to the database
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
     if len(params) > 0:
         cursor.execute(q, params)
     else:
-        cursor.executescript(q)
+        split_q = q.split(';')
+        for sub_q in split_q:
+            cursor.execute(sub_q)
+        # cursor.executescript(q)
     result = cursor.fetchall()
+    print("select result", result)
     # Close the connection
     conn.close()
     return result
 
 
 async def exec_insert_query(q, *params):
-    print(q)
-    print(params)
+    print(q, params)
     # Connect to the database
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
