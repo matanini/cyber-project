@@ -95,7 +95,7 @@ async def change_password(username: str, old_password: str, new_password: str, s
     elif res.status_code == 401:
         return {"status": "error", "message": "Invalid credentials"}
     elif res.status_code == 409:
-        return {"status": "error", "message": "New password cannot be the same as the old one"}
+        return {"status": "error", "message": "New password cannot be the same as an older one"}
     else:
         return {"status": "error", "message": "Unknown error"}
 

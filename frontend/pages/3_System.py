@@ -9,7 +9,7 @@ import os
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
-st.set_page_config(page_title="System", page_icon=":smiley:")
+st.set_page_config(page_title="System", page_icon=":smiley:", layout="wide")
 init_page(st)
 
 
@@ -29,7 +29,7 @@ res = httpx.get(url, timeout=None)
 clients = res.json()
 
 
-cols = st.columns(spec=[1,2,2,2,2]) 
+cols = st.columns(spec=[1,4,3,2,2])
 cols[1].markdown("**Name**") 
 cols[2].markdown("**Email**") 
 cols[3].markdown("**Phone**") 
@@ -39,7 +39,7 @@ cols[4].markdown("**City**")
 if st.session_state["secure_mode"]:
     for client in clients: 
         row = st.container() 
-        cols = row.columns(spec=[1,2,2,2,2]) 
+        cols = row.columns(spec=[1,4,3,2,2])
         
         cols[0].write(client["client_id"]) 
         cols[1].write(client["name"]) 
@@ -50,7 +50,7 @@ else:
     # Low security mode
     for client in clients: 
         row = st.container() 
-        cols = row.columns(spec=[1,2,2,2,2]) 
+        cols = row.columns(spec=[1,4,3,2,2])
         
         with cols[0]:
             components.html(f'{client["client_id"]}', width=0, height=0) 

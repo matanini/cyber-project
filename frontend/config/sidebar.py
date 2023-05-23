@@ -1,6 +1,8 @@
 def init_page(st):
     if "user" not in st.session_state:
         st.session_state["user"] = None
+    if "secure_mode" not in st.session_state:
+        st.session_state["secure_mode"] = True
     _, col_sidebar, _ = st.sidebar.columns([1, 3, 1])
     if st.session_state["user"] is not None:
         col_sidebar.subheader(f"Hello {st.session_state['user']['username']}!")
@@ -16,7 +18,10 @@ def init_page(st):
     st.sidebar.divider()
     _, col_sidebar, _ = st.sidebar.columns([1, 2, 1])
     col_sidebar.subheader("Security level")
-    st.session_state["secure_mode"] = col_sidebar.selectbox("Select security level", ["Low", "High"]) == 'High'
+    secure_mode = col_sidebar.selectbox("Select security level",
+                                                            ["Low", "High"],
+                                                            index=int(st.session_state["secure_mode"]))
+    st.session_state["secure_mode"] = secure_mode == 'High'
 
     # Logo + ©️
     st.sidebar.divider()

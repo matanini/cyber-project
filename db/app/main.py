@@ -157,7 +157,7 @@ async def change_password(request: Request):
                 await services.change_password(username, hashed_new_password, password_history, secure_mode)
                 return {"status": "success"}
             else:
-                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as the old one")
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as an older one")
         else:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid password")
     else:
@@ -186,7 +186,7 @@ async def reset_password(request: Request):
             await services.reset_password(email, password, password_history, secure_mode)
             return {"status": "success"}
         else:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as the old one")
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as an older one")
     else:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
