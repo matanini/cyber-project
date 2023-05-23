@@ -4,9 +4,7 @@ import streamlit as st
 import os
 
 BACKEND_URL = os.getenv('BACKEND_URL')
-
 st.set_page_config(page_title="Homepage", page_icon=":smiley:")
-
 init_page(st)
 
 st.image("https://i.ibb.co/tKm1VRH/comunication-ltd.png")
