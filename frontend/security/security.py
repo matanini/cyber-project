@@ -59,3 +59,17 @@ def check_password_match(password, confirm_password):
 def check_email(email):
     format = r"^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$"
     return re.match(format, email)
+
+
+def check_phone(phone):
+    format = r"^\+?[0-9]+$"
+    return re.match(format, phone)
+
+
+def check_input(st, name, email, phone, city):
+    if name == "": st.error("Name cannot be empty.")
+    if email == "": st.error("Email cannot be empty.")
+    if phone == "": st.error("Phone cannot be empty.")
+    if city == "": st.error("City cannot be empty.")
+    if not check_email(email): st.error("Invalid email format.")
+    if not check_phone(phone): st.error("Invalid phone format.")

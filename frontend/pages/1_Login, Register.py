@@ -1,13 +1,13 @@
-import streamlit as st
 from config.sidebar import init_page
 from security.security import check_password_policy, check_password_match, check_email
+
+import streamlit as st
 import httpx
 import os
 
+
 BACKEND_URL = os.getenv("BACKEND_URL")
-
 st.set_page_config(page_title="Welcome to Homepage", page_icon=":smiley:")
-
 init_page(st)
 
 if 'user' in st.session_state and st.session_state['user'] is not None:

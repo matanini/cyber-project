@@ -1,27 +1,16 @@
-import streamlit as st
-import os
-import re
-import httpx
 from config.sidebar import init_page
+from security.security import check_input
+
+import streamlit as st
 import streamlit.components.v1 as components
+import httpx
+import os
 
 
 BACKEND_URL = os.getenv("BACKEND_URL")
 
 st.set_page_config(page_title="System", page_icon=":smiley:")
 init_page(st)
-def check_email(email):
-        format = r"^[a-zA-Z0-9]+@[a-zA-Z0-9]+\.[a-zA-Z0-9]+$"
-        return re.match(format, email)
-def check_phone(phone):
-    format = r"^\+?[0-9]+$"
-    return re.match(format, phone)
-def check_input(name, email, phone, city):
-    if name == "": st.error("Name cannot be empty.")
-    if email == "": st.error("Email cannot be empty.")
-    if phone == "": st.error("Phone cannot be empty.")
-    if city == "": st.error("City cannot be empty.")
-    if not check_email(email): st.error("Invalid email format.")
 
 
 # check if logged in 
@@ -80,8 +69,8 @@ else:
             st.write(client["city"]) 
 
 st.divider()
-# Create new client
-# st.header("Create new client")
+
+
 expander = st.expander("Create new client")
 form = expander.form(key="create_new_client")
 name = form.text_input("Name")
@@ -90,7 +79,7 @@ phone = form.text_input("Phone")
 city = form.text_input("City")
 submit = form.form_submit_button("Create new client")
 if submit:
-    check_input(name, email, phone, city)
+    check_input(st, name, email, phone, city)
     url = f"{BACKEND_URL}/clients/create/"
     data = {"name": name, "email": email, "phone": phone, "city": city, "secure_mode": st.session_state["secure_mode"]}
     res = httpx.post(url, json=data, timeout=None)

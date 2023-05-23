@@ -13,24 +13,27 @@ async def get_app_data(key: str):
     return response.json()['value']
 
 async def get_user_by_username(username: str, secure_mode):
-    url = f"{DB_URL}/users/?mode=username&ident={username}&secure_mode={secure_mode}"
-    response = httpx.get(url, timeout=None)
+    data = {"mode": 'username','ident': username, "secure_mode": secure_mode}
+    url = f"{DB_URL}/users"
+    response = httpx.post(url, json=data, timeout=None)
     if response.status_code == 200:
         return response.json()['user']
     else:
         return None
 
-async def get_user_by_email(email: str):
-    url = f"{DB_URL}/users/?mode=email&ident={email}"
-    response = httpx.get(url, timeout=None)
+async def get_user_by_email(email: str, secure_mode:bool):
+    data = {"mode": 'email','ident': email, "secure_mode": secure_mode}
+    url = f"{DB_URL}/users"
+    response = httpx.post(url, json=data, timeout=None)
     if response.status_code == 200:
         return response.json()['user']
     else:
         return None
 
-async def get_user_by_user_id(user_id: int):
-    url = f"{DB_URL}/users/?mode=user_id&ident={user_id}"
-    response = httpx.get(url, timeout=None)
+async def get_user_by_user_id(user_id: int, secure_mode: bool):
+    data = {"mode": 'user_id','ident': user_id, "secure_mode": secure_mode}
+    url = f"{DB_URL}/users"
+    response = httpx.post(url, json=data, timeout=None)
     if response.status_code == 200:
         return response.json()['user']
     else:
@@ -96,22 +99,22 @@ async def change_password(username: str, old_password: str, new_password: str, s
     else:
         return {"status": "error", "message": "Unknown error"}
 
-async def reset_password(email:str, password: str):
-    user = await get_user_by_email(email)
+async def reset_password(email:str, password: str,secure_mode):
+    user = await get_user_by_email(email, secure_mode)
     if user is None:
         return {"status": "error", "message": "User not found"}
     salt = await get_app_data("salt")
     hashed_password = security.hash_password(salt, password)
     url = f"{DB_URL}/users/reset_password/"
-    res = httpx.post(url, json={'email': email, 'password': hashed_password}, timeout=None)
+    res = httpx.post(url, json={'email': email, 'password': hashed_password, "secure_mode":secure_mode}, timeout=None)
     if res.status_code == 200:
         return {"status": "success", "message": "Password reset successfully"}
     else:
         return {"status": "error", "message": res.json()['detail'],'res_code': res.status_code}
 
 
-async def forgot_password(email: str):
-    user = await get_user_by_email(email)
+async def forgot_password(email: str, secure_mode: bool):
+    user = await get_user_by_email(email, secure_mode)
     print(user)
     if user is None:
         return {"status": "error", "message": "User not found", 'res_code': 404}
@@ -123,7 +126,7 @@ async def forgot_password(email: str):
     if res['status'] == "success":
         # save the token in the database
         url = f"{DB_URL}/users/save_token/"
-        res = httpx.post(url, json={'email': user['email'], 'token': token}, timeout=None)
+        res = httpx.post(url, json={'email': user['email'], 'token': token, 'secure_mode':secure_mode}, timeout=None)
         if res.status_code == 200:
             return {"status": "success", "message": "Password reset token sent to your email"}
         else:

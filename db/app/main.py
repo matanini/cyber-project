@@ -51,8 +51,14 @@ async def get_all_users(request: Request):
             })
     return users_list
 
-@app.get("/users/")
-async def get_user(request: Request, mode: str, ident: int|str, secure_mode:bool):
+@app.post("/users")
+async def get_user(request: Request):
+    data = await request.json()
+    mode = data['mode']
+    ident = data['ident']
+    secure_mode = data['secure_mode']
+
+    print("db get_user", mode, ident, secure_mode)
     if mode == "email":
         user = await services.get_user_by_email(ident, secure_mode)
     elif mode == "user_id":
@@ -162,16 +168,22 @@ async def reset_password(request: Request):
     data = await request.json()
     email = data['email']
     password = data['password']
+    secure_mode = data['secure_mode']
 
-    user = await services.get_user_by_email(email)
-    print("reset_password db", user)
+    user = await services.get_user_by_email(email, secure_mode)
+    
     if user:
+        token_data = services.get_token_data_by_mail(email)
+        if len(token_data) > 0:
+            if datetime.strptime(token_data[0][2], DATE_TIME_FORMAT) < datetime.now():
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+        else:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+        
         password_history = user[0][-1].split(",")
-        print("password_history", password_history)
-        print("password", password)
-        if await services.check_old_passwords(password, password_history):
+        if services.check_old_passwords(password, password_history):
             password_history.append(password)
-            await services.reset_password(email, password, password_history)
+            await services.reset_password(email, password, password_history, secure_mode)
             return {"status": "success"}
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="New password cannot be the same as the old one")
@@ -183,7 +195,8 @@ async def save_token(request: Request):
     data = await request.json()
     email = data['email']
     token = data['token']
-    user = await services.get_user_by_email(email)
+    secure_mode = data['secure_mode']
+    user = await services.get_user_by_email(email, secure_mode)
     if user:
         await services.save_new_token(email, token)
         return {"status": "success"}
@@ -210,5 +223,6 @@ async def increment_login_attempts(request: Request):
     data = await request.json()
     username = data['username']
     user_login_attempts = await services.increment_login_attempts(username)
+    
     login_attempts_data = {'username' : username, 'no_of_attempts' : user_login_attempts[2], 'last_attempt': user_login_attempts[3]}
     return {"status": "success", 'login_attempts_data':login_attempts_data}

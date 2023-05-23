@@ -202,13 +202,13 @@ async def update_user(user_id, username, password, email):
     return await get_user_by_user_id(user_id)
 
 
-async def reset_password(email, password, password_history):
+async def reset_password(email, password, password_history, secure_mode):
     if len(password_history) > PASSWORD_HISTORY_LENGTH:
         password_history = password_history[-PASSWORD_HISTORY_LENGTH:]
 
     q = "UPDATE `users` SET user_password=?, password_history=? WHERE user_email=?"
     await exec_insert_query(q, password, ",".join(password_history), email)
-    return await get_user_by_email(email)
+    return await get_user_by_email(email, secure_mode)
 
 
 async def change_password(username, password, password_history, secure_mode):
@@ -228,15 +228,19 @@ def check_old_passwords(password, old_passwords):
 
 
 async def save_new_token(email, token):
-    db_token = await get_token_data_by_mail(email)
+    db_token = await get_token_by_mail(email)
     if len(db_token) > 0:
         await remove_token_by_mail(email)
     q = "INSERT INTO `tokens` (user_email, token, expiry) VALUES (?, ?, ?)"
     await exec_insert_query(q, email, token, (datetime.now() + timedelta(minutes=10)).strftime(DATE_TIME_FORMAT))
 
 
-async def get_token_data_by_mail(email):
+async def get_token_by_mail(email):
     q = "SELECT token FROM `tokens` WHERE user_email=?"
+    return await exec_select_query(q, email)
+
+async def get_token_data_by_mail(email):
+    q = "SELECT * FROM `tokens` WHERE user_email=?"
     return await exec_select_query(q, email)
 
 

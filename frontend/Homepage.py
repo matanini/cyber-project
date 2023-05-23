@@ -1,6 +1,7 @@
+from config.sidebar import init_page
+
 import streamlit as st
 import os
-from config.sidebar import init_page
 
 BACKEND_URL = os.getenv('BACKEND_URL')
 
@@ -20,6 +21,7 @@ st.markdown("""
     Please be kind and grade us with 100 😎.
 
     ### Vulnerabilities:
+    Make sure to set security mode to low.
     - [x] SQL Injection:
         - [x] [REGISTER : username] 1' OR 'a'='a'; drop table 'tokens' --
         - [x] [LOGIN : username] a' OR '1'='1'; drop table 'users' --

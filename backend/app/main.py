@@ -86,8 +86,9 @@ async def get_all_clients(request: Request):
 async def forgot_password(request: Request):
     data = await request.json()
     email = data['email']
+    secure_mode = data['secure_mode']
 
-    res = await services.forgot_password(email)
+    res = await services.forgot_password(email, secure_mode)
     print(res)
     if res['status'] == 'error':
         raise HTTPException(status_code=res['res_code'], detail=res['message'])
@@ -99,12 +100,10 @@ async def reset_password(request: Request):
     data = await request.json()
     email = data['email']
     password = data['password']
+    secure_mode = data['secure_mode']
 
-    res = await services.reset_password(email, password)
+    res = await services.reset_password(email, password, secure_mode)
     print("reset_password", res)
-    # if res['status'] == 'error':
-    #     raise HTTPException(status_code=res['res_code'], detail=res['message'])
-    # else:
     return res
     
 @app.post("/users/validate_token")

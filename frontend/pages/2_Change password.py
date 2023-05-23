@@ -1,15 +1,13 @@
-import streamlit as st
-import re
-from config.config import PASSWORD_POLICY
 from config.sidebar import init_page
 from security.security import check_password_policy, check_password_match, check_email
+
+import streamlit as st
 import httpx
 import os
 
+
 BACKEND_URL = os.getenv("BACKEND_URL")
-
 st.set_page_config(page_title="Change password", page_icon=":smiley:")
-
 init_page(st)
 
 
@@ -32,7 +30,7 @@ if 'user' not in st.session_state or st.session_state['user'] is None:
     email = st.text_input("Email address")
     if st.button("Send email"):
         if check_email(email):
-            response = httpx.post(f"{BACKEND_URL}/users/forgot_password", json={"email": email}, timeout=None)
+            response = httpx.post(f"{BACKEND_URL}/users/forgot_password", json={"email": email, "secure_mode": st.session_state['secure_mode']}, timeout=None)
             if response.status_code == 200:
                 st.success("Email sent successfully.")
                 st.session_state['token_sent'] = True 
@@ -54,6 +52,8 @@ if 'user' not in st.session_state or st.session_state['user'] is None:
                 st.session_state['token_validated'] = True
             else:
                 st.error(response['message'])
+                st.session_state['token_validated'] = False
+                
         if 'token_validated' in st.session_state and st.session_state['token_validated']:
             form = st.form(key='reset_password_form')
             new_password = form.text_input("New password", type="password")
@@ -65,7 +65,8 @@ if 'user' not in st.session_state or st.session_state['user'] is None:
                     if check_password_policy(st, new_password):
                         response = httpx.post(f"{BACKEND_URL}/users/reset_password", json={
                             "email": email,
-                            "password": new_password
+                            "password": new_password,
+                            "secure_mode": st.session_state['secure_mode']
                         })
                         st.write(response.text)
                         response = response.json()
