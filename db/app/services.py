@@ -1,9 +1,9 @@
-from app.config.config import DBFILE, PASSWORD_HISTORY_LENGTH, DATE_TIME_FORMAT, USER_BLOCK_TIME
+from app.config.config import DBFILE, PASSWORD_HISTORY_LENGTH, DATE_TIME_FORMAT, USER_BLOCK_TIME, TOKEN_ALIVE_TIME
 
 from datetime import datetime, timedelta
 import sqlite3
 import secrets
-import asyncio
+
 
 
 async def create_database():
@@ -232,7 +232,9 @@ async def save_new_token(email, token):
     if len(db_token) > 0:
         await remove_token_by_mail(email)
     q = "INSERT INTO `tokens` (user_email, token, expiry) VALUES (?, ?, ?)"
-    await exec_insert_query(q, email, token, (datetime.now() + timedelta(minutes=10)).strftime(DATE_TIME_FORMAT))
+    await exec_insert_query(q, email, token, 
+                            (datetime.now() + 
+                             timedelta(days=TOKEN_ALIVE_TIME["day"], hours=TOKEN_ALIVE_TIME["hour"], minutes=TOKEN_ALIVE_TIME["minute"])).strftime(DATE_TIME_FORMAT))
 
 
 async def get_token_by_mail(email):

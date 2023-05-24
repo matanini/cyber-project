@@ -1,14 +1,8 @@
-from fastapi import FastAPI, Request, HTTPException, Form, status, Depends, Response
+from fastapi import FastAPI, Request, HTTPException, status
 import app.services as services
-# from app.sessions import cookie, SessionData, backend_memory, verifier
-from uuid import UUID, uuid4
 
 app = FastAPI(title="Backend")
 
-
-# @app.on_event("startup")
-# async def startup_event():
-#     pass
 
 @app.post('/register')
 async def register(request: Request):
