@@ -9,7 +9,10 @@ This is a simple web application that allows users to register and login.
 The application also allows users to view a list of clients and their details.  
 We chose to built this app in a microservices architecture, using **Docker** and **Docker Compose**.  
 The frontend is built with [**Streamlit**](https://docs.streamlit.io/), the backend is built with [**FastAPI**](https://fastapi.tiangolo.com/) and the database is built with **SQLite3** with **FastAPI**.  
-The application is vulnerable to **SQL injection** and **stored XSS** attacks.
+
+The system can be operated in two `secure modes`: **High** and **Low**, which can be chosen from the sidebar.  
+In the **Low security mode**, the application is vulnerable to **SQL injection** and **stored XSS** attacks.  
+You can find examples in the **Vulnerabilities** section below, and in the **Homepage** in the app.  
 
 This project was created as the final project of **Computer Security course at HIT, 2023**.
 
