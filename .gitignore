@@ -1,6 +1,9 @@
 *.ipynb
-.idea
 *.pyc
+
+*.env
+*.pem
+
+.idea
 .pytest_cache
 __pycache__
-*.env
