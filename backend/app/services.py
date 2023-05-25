@@ -3,8 +3,9 @@ import os
 import app.security as security
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from app.config.config import MAX_LOGIN_ATTEMPTS
+import dotenv
 
-
+mail_secrets = dotenv.dotenv_values(".env")
 DB_URL = os.getenv("DB_URL")
 
 async def get_app_data(key: str):
@@ -49,7 +50,6 @@ async def create_new_user(username: str, password: str, email: str, secure_mode:
     hashed_password = security.hash_password(salt, password)
     url = f"{DB_URL}/users/create/"
     data = {"username": username, "password": hashed_password, "email": email, "secure_mode": secure_mode}
-    print("b create_new_user" ,data)
     response = httpx.post(url, 
         json=data, timeout=None)
     if response.status_code == 200:
@@ -61,7 +61,6 @@ async def create_new_client(name: str, email: str, phone: str, city: str, secure
     url = f"{DB_URL}/clients/create/"
     data = {"name": name, "email": email, "phone": phone, "city": city, "secure_mode": secure_mode}
     response = httpx.post(url, json=data, timeout=None)
-    print("backend create_new_client",response.text)
     if response.status_code == 200:
         return response.json()['client']
     else:
@@ -115,7 +114,6 @@ async def reset_password(email:str, password: str,secure_mode):
 
 async def forgot_password(email: str, secure_mode: bool):
     user = await get_user_by_email(email, secure_mode)
-    print(user)
     if user is None:
         return {"status": "error", "message": "User not found", 'res_code': 404}
     
@@ -153,8 +151,8 @@ async def send_forgot_password(email, token):
         subtype="html"
     )
     conf = ConnectionConfig(
-        MAIL_USERNAME='communication.ltd.2023',
-        MAIL_PASSWORD="qlqgjhdtxkqwwudi",
+        MAIL_USERNAME=mail_secrets['MAIL_USERNAME'],
+        MAIL_PASSWORD=mail_secrets['MAIL_PASSWORD'],
         MAIL_FROM='communication.ltd.2023@gmail.com',
         MAIL_PORT=587,
         MAIL_SERVER='smtp.gmail.com',
