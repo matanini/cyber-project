@@ -64,7 +64,6 @@ async def create_client(request: Request):
     phone = data['phone']
     city = data['city']
     secure_mode = data['secure_mode']
-    print("backend create_client", name, email, phone, city, secure_mode)
     client = await services.create_new_client(name, email, phone, city, secure_mode)
     if not client:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client already exists")
@@ -83,7 +82,6 @@ async def forgot_password(request: Request):
     secure_mode = data['secure_mode']
 
     res = await services.forgot_password(email, secure_mode)
-    print(res)
     if res['status'] == 'error':
         raise HTTPException(status_code=res['res_code'], detail=res['message'])
     else:
@@ -97,7 +95,6 @@ async def reset_password(request: Request):
     secure_mode = data['secure_mode']
 
     res = await services.reset_password(email, password, secure_mode)
-    print("reset_password", res)
     return res
     
 @app.post("/users/validate_token")

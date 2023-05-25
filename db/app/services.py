@@ -90,8 +90,6 @@ async def get_app_data(key):
 #     return result
 
 async def exec_select_query(q, *params):
-    print(q, params)
-    # print(params)
     # Connect to the database
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
@@ -101,16 +99,13 @@ async def exec_select_query(q, *params):
         split_q = q.split(';')
         for sub_q in split_q:
             cursor.execute(sub_q)
-        # cursor.executescript(q)
     result = cursor.fetchall()
-    print("select result", result)
     # Close the connection
     conn.close()
     return result
 
 
 async def exec_insert_query(q, *params):
-    print(q, params)
     # Connect to the database
     conn = sqlite3.connect(DBFILE)
     cursor = conn.cursor()
@@ -146,7 +141,6 @@ async def get_client_by_id(client_id, secure_mode= True):
 
 
 async def get_client_by_email(email, secure_mode):
-    print("get_client_by_email ",email)
     if not secure_mode:
         q = f"SELECT * FROM `clients` WHERE client_email='{email}'"
         return await exec_select_query(q)
@@ -187,7 +181,6 @@ async def create_new_user(username, hashed_password, email, secure_mode):
 
 
 async def create_new_client(name, email, phone, city, secure_mode):
-    print(secure_mode)
     if not secure_mode:
         q = f"INSERT INTO `clients` (client_name, client_email, client_phone, client_city) VALUES ('{name}', '{email}', '{phone}', '{city}')"
         await exec_insert_query(q)

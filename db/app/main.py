@@ -58,7 +58,6 @@ async def get_user(request: Request):
     ident = data['ident']
     secure_mode = data['secure_mode']
 
-    print("db get_user", mode, ident, secure_mode)
     if mode == "email":
         user = await services.get_user_by_email(ident, secure_mode)
     elif mode == "user_id":
@@ -94,7 +93,6 @@ async def create_user(request:Request):
     password = data['password']
     email = data['email']
     secure_mode = data['secure_mode']
-    print("db user create", username, password, email, secure_mode)
     user_username = await services.get_user_by_username(username, secure_mode)
     user_email = await services.get_user_by_email(email, secure_mode)
 
@@ -112,7 +110,6 @@ async def create_client(request: Request):
     phone = data['phone']
     city = data['city']
     secure_mode = data['secure_mode']
-    print("db client create", name, email, phone, city, secure_mode)
     client = await services.get_client_by_email(email, secure_mode)
     if client:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Client already exists")
@@ -126,11 +123,8 @@ async def login(request: Request):
     username = data['username']
     password = data['password']
     secure_mode = data['secure_mode']
-    print(username, password, secure_mode)
     user = await services.get_user_by_username(username, secure_mode)
-    print(user)
     if user:
-        print("login-db", user[0][2], password)
         if user[0][2] == password:
             await services.delete_login_attempt(username)
             return {"status": "success", "user" :{"user_id": user[0][0], "username": user[0][1], "email": user[0][3]}}
@@ -142,7 +136,6 @@ async def login(request: Request):
 @app.post("/users/change_password/")
 async def change_password(request: Request):
     data = await request.json()
-    print(data)
     username = data['username']
     hashed_old_password = data['hashed_old_password']
     hashed_new_password = data['hashed_new_password']
