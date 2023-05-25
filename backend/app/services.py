@@ -153,7 +153,7 @@ async def send_forgot_password(email, token):
     conf = ConnectionConfig(
         MAIL_USERNAME=mail_secrets['MAIL_USERNAME'],
         MAIL_PASSWORD=mail_secrets['MAIL_PASSWORD'],
-        MAIL_FROM='communication.ltd.2023@gmail.com',
+        MAIL_FROM=mail_secrets['MAIL_FROM'],
         MAIL_PORT=587,
         MAIL_SERVER='smtp.gmail.com',
         MAIL_FROM_NAME="Communication_LTD",
